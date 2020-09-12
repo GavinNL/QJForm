@@ -97,7 +97,19 @@ public:
 
     void setSchema(const QJsonObject & J) override;
     ~QJArray();
-    std::vector< QJValue*> m_items;
+
+    struct item_t
+    {
+        QJValue * m_widget;
+        QHBoxLayout * m_layout;
+        QToolButton *m_up;
+        QToolButton *m_down;
+        QToolButton *m_del;
+    };
+
+    std::vector< item_t > m_items;
+
+    void _rebuild();
 
 };
 

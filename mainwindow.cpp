@@ -5,6 +5,7 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QScrollArea>
 
 QJsonObject ObjectFromString(const QString& in)
 {
@@ -36,9 +37,9 @@ QJsonObject ObjectFromString(const QString& in)
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    auto * x = new QJValue(this);
 
-    this->setCentralWidget(x);
+
+    //this->setCentralWidget(x);
 
     auto jstr = R"foo({
     "type" : "object",
@@ -94,13 +95,37 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Get JSON object
     QJsonObject J = ObjectFromString( QString(jstr) );
-
+    auto * x = new QJValue(this);
     x->setSchema(J);
 
-    // `ba` contains JSON
-     auto root = x->getValue().toObject();
-     QByteArray ba = QJsonDocument(root).toJson();
-     std::cout << ba.toStdString() << std::endl;
+
+    auto W  = new QWidget(this);
+    auto vb = new QVBoxLayout();
+
+
+    W->setLayout( vb );
+
+
+    this->setCentralWidget(W);
+
+    auto S = new QScrollArea(W);
+    auto submit = new QPushButton("ok");
+
+    vb->addWidget( S );
+    vb->addWidget( submit );
+
+    S->setWidget(x);
+    S->setWidgetResizable(true);
+
+
+    connect( submit, &QPushButton::clicked,
+             [x](bool)
+            {
+            // `ba` contains JSON
+             auto root = x->getValue().toObject();
+             QByteArray ba = QJsonDocument(root).toJson();
+             std::cout << ba.toStdString() << std::endl;
+            });
 }
 
 MainWindow::~MainWindow()

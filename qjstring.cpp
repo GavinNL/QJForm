@@ -265,6 +265,32 @@ QJArray::~QJArray()
 
 }
 
+void QJArray::_rebuild()
+{
+    auto * L = dynamic_cast<QFormLayout*>(layout());
+
+    while(L->rowCount())
+    {
+        auto h = L->takeRow( L->rowCount()-1 );
+        bool found=false;
+        for(auto & x : m_items)
+        {
+            if( h.fieldItem == x.m_layout)
+                found=true;
+        }
+        if( !found )
+        {
+            delete h.fieldItem;
+        }
+    }
+
+    for(auto & x : m_items)
+    {
+        L->addRow( x.m_layout );
+    }
+
+}
+
 void QJArray::setSchema(const QJsonObject &J)
 {
     auto * L = dynamic_cast<QFormLayout*>(layout());
@@ -273,16 +299,96 @@ void QJArray::setSchema(const QJsonObject &J)
     {
         auto p = J.find("items")->toArray();
 
+        int ro=0;
         for(auto i=p.begin(); i!=p.end();i++)
         {
             auto * w = new QJValue(this);
+            auto * h = new QHBoxLayout();
 
             w->setSchema( i->toObject() );
-            L->addRow(w);
 
-            m_items.push_back(w);
+            h->addWidget(w);
+
+            auto * up   = new QToolButton(this); up->setArrowType(Qt::UpArrow);
+            auto * down = new QToolButton(this); down->setArrowType(Qt::DownArrow);
+            auto * del  = new QToolButton(this); del->setText("✖");
+
+            connect( down, &QAbstractButton::clicked,
+                     [w, this](bool)
+            {
+                size_t ro=0;
+                for(auto & x : m_items)
+                {
+                    if( x.m_widget == w)
+                    {
+                        if( ro != m_items.size()-1)
+                        {
+                            std::swap( m_items[ro], m_items[ro+1]);
+                            _rebuild();
+                            return;
+                        }
+                    }
+                    ro++;
+                }
+            });
+
+            connect( up, &QAbstractButton::clicked,
+                     [w, this](bool)
+            {
+                size_t ro=0;
+                for(auto & x : m_items)
+                {
+                    if( x.m_widget == w)
+                    {
+                        if( ro!=0)
+                        {
+                            std::swap( m_items[ro-1], m_items[ro]);
+                            _rebuild();
+                            return;
+                        }
+                    }
+                    ro++;
+                }
+            });
+
+            connect( del, &QAbstractButton::clicked,
+                     [w, this, L](bool)
+            {
+                int ro=0;
+                for(auto & x : m_items)
+                {
+                    if( x.m_widget == w)
+                    {
+                        delete x.m_widget;
+                        delete x.m_down;
+                        delete x.m_up;
+                        delete x.m_del;
+                        delete x.m_layout;
+                        m_items.erase( m_items.begin()+ro);
+                        return;
+                    }
+                    ro++;
+                }
+            });
+
+            //QPalette pal = del->palette();
+            //pal.setColor(QPalette::Base, QColor(Qt::red));
+            //del->setAutoFillBackground(true);
+            //del->setPalette(pal);
+            //del->update();
+
+
+            h->addWidget( up);
+            h->addWidget( down);
+            h->addWidget( del);
+
+//            L->addRow(h);
+
+            m_items.push_back({w,h, up, down, del});
+            ro++;
         }
     }
+    _rebuild();
 }
 
 QJsonValue QJArray::getValue() const
@@ -290,7 +396,7 @@ QJsonValue QJArray::getValue() const
     QJsonArray O;
     for(auto & x : m_items)
     {
-        O.push_back( x->getValue() );
+        O.push_back( x.m_widget->getValue() );
     }
     return O;
 }
@@ -384,7 +490,7 @@ void QJObject::setOneOf(const QJsonObject &J)
     {
         m_propertiesLayout->removeRow( m_propertiesLayout->rowCount()-1);
     }
-
+    m_properties.clear();
     if( J.contains("properties"))
     {
         auto p = J.find("properties")->toObject();

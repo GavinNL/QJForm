@@ -9,6 +9,7 @@
 #include <QSlider>
 #include <QFileDialog>
 #include <QTextEdit>
+#include <QLine>
 #include <iostream>
 
 QJBase::QJBase(QWidget *parent) :
@@ -268,16 +269,19 @@ void QJArray::setSchema(const QJsonObject &J)
 {
     auto * L = dynamic_cast<QFormLayout*>(layout());
 
-    auto p = J.find("items")->toArray();
-
-    for(auto i=p.begin(); i!=p.end();i++)
+    if( J.contains("items"))
     {
-        auto * w = new QJValue(this);
+        auto p = J.find("items")->toArray();
 
-        w->setSchema( i->toObject() );
-        L->addRow(w);
+        for(auto i=p.begin(); i!=p.end();i++)
+        {
+            auto * w = new QJValue(this);
 
-        m_items.push_back(w);
+            w->setSchema( i->toObject() );
+            L->addRow(w);
+
+            m_items.push_back(w);
+        }
     }
 }
 
@@ -299,10 +303,26 @@ QJsonValue QJArray::getValue() const
 QJObject::QJObject(QWidget *parent) :
     QJBase(parent)
 {
-    QFormLayout * h  = new QFormLayout(this);
-    h->setMargin(3);
-    this->setLayout(h);
+    QFormLayout * l  = new QFormLayout(this);
 
+    m_propertiesLayout  = new QFormLayout(this);
+
+
+    {
+        m_oneOf = new QComboBox(this);
+
+        connect(m_oneOf, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        [this](int i)
+        {
+            this->setOneOf( m_oneOfArray[i].toObject() );//->setText( m_Combo->currentText() );
+        });
+
+        l->addWidget(m_oneOf);
+    }
+
+    m_propertiesLayout->setMargin(3);
+
+    l->addRow(m_propertiesLayout);
 }
 
 QJObject::~QJObject()
@@ -312,26 +332,80 @@ QJObject::~QJObject()
 
 void QJObject::setSchema(const QJsonObject &J)
 {
-    auto * L = dynamic_cast<QFormLayout*>(layout());
+    auto * L = m_propertiesLayout;
 
-    auto p = J.find("properties")->toObject();
-
-    for(auto i=p.begin(); i!=p.end();i++)
     {
-        auto k = i.key();
-        auto v = i.value();
-
-        auto * w = new QJValue(this);
-        auto vO = v.toObject();
-
-        auto t = vO.find("title");
-        if( t!=vO.end()){
-            k = t->toString( k );
+        m_oneOf->clear();
+        auto oneOfI = J.find("oneOf");
+        if( oneOfI != J.end())
+        {
+            m_oneOfArray = oneOfI->toArray();
+            for(auto x : m_oneOfArray)
+            {
+                QString label = x.toObject().find("title")->toString();
+                m_oneOf->addItem(label);
+            }
+            m_oneOf->setVisible(true);
         }
-        w->setSchema(vO);
-        L->addRow( k, w);
+        else
+        {
+            m_oneOf->setVisible(false);
+        }
+    }
 
-        m_properties[ i.key() ] = w;
+
+    setOneOf(J);
+//    auto p = J.find("properties")->toObject();
+
+//    for(auto i=p.begin(); i!=p.end();i++)
+//    {
+//        auto k = i.key();
+//        auto v = i.value();
+
+//        auto * w = new QJValue(this);
+//        auto vO = v.toObject();
+
+//        auto t = vO.find("title");
+//        if( t!=vO.end()){
+//            k = t->toString( k );
+//        }
+//        w->setSchema(vO);
+//        L->addRow( k, w);
+
+//        m_properties[ i.key() ] = w;
+//    }
+}
+
+void QJObject::setOneOf(const QJsonObject &J)
+{
+    auto * L = m_propertiesLayout;
+
+    while(m_propertiesLayout->rowCount())
+    {
+        m_propertiesLayout->removeRow( m_propertiesLayout->rowCount()-1);
+    }
+
+    if( J.contains("properties"))
+    {
+        auto p = J.find("properties")->toObject();
+
+        for(auto i=p.begin(); i!=p.end();i++)
+        {
+            auto k = i.key();
+            auto v = i.value();
+
+            auto * w = new QJValue(this);
+            auto vO = v.toObject();
+
+            auto t = vO.find("title");
+            if( t!=vO.end()){
+                k = t->toString( k );
+            }
+            w->setSchema(vO);
+            L->addRow( k, w);
+
+            m_properties[ i.key() ] = w;
+        }
     }
 }
 

@@ -10,6 +10,9 @@
 
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QJsonArray>
+
+#include <QFormLayout>
 
 class QJValue;
 
@@ -71,9 +74,14 @@ public:
 
     QJsonValue getValue() const override;
 
+    void setOneOf(const QJsonObject & J);
     void setSchema(const QJsonObject & J) override;
     ~QJObject();
     std::map< QString, QJValue*> m_properties;
+
+    QJsonArray m_oneOfArray;
+    QComboBox * m_oneOf=nullptr;
+    QFormLayout * m_propertiesLayout = nullptr;
 
 };
 

@@ -51,6 +51,28 @@ MainWindow::MainWindow(QWidget *parent)
         "range" : { "type" : "number", "minimum" : 0, "maximum" : 50, "default" : 10, "ui:widget" : "range" },
         "obj" : {
                 "type" : "object",
+                "oneOf" : [
+                    {
+                        "type" : "object",
+                        "title" : "First object",
+                        "properties" : {
+                            "str" : { "type" : "string", "title" : "String" },
+                            "num" : { "type" : "number" }
+                        }
+                    },
+                    {
+                        "type" : "object",
+                        "title" : "Second Object",
+                        "properties" : {
+                            "str" : { "type" : "string", "default" : "hello world" },
+                            "enum" : { "type" : "string", "default" : "hello world", "enum" : ["first", "second", "third" ] },
+                            "file" : { "type" : "string", "default" : "/", "ui:widget" : "file" },
+                            "dir" : { "type" : "string", "default" : "/", "ui:widget" : "dir" },
+                            "num" : { "type" : "number", "minimum" : 0, "maximum" : 50, "default" : 10 },
+                            "range" : { "type" : "number", "minimum" : 0, "maximum" : 50, "default" : 10, "ui:widget" : "range" }
+                        }
+                    }
+                ],
                 "properties" : {
                     "str" : { "type" : "string", "title" : "String" },
                     "num" : { "type" : "number" }

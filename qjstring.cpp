@@ -512,11 +512,29 @@ void QJObject::setOneOf(const QJsonObject &J)
                     k = t->toString( k );
                 }
             }
+            bool visible=true;
+            {
+                auto t = vO.find("ui:visible");
+                if( t!=vO.end()){
+                    visible = t->toBool(true);
+                }
+            }
+
+            {
+                auto t = vO.find("description");
+                if( t!=vO.end()){
+                    w->setToolTip(t->toString());
+                }
+            }
 
             w->setSchema(vO);
             //L->addRow( k, w);
 
-            props[k] = w;
+            if( visible)
+            {
+                props[k] = w;
+            }
+            w->setVisible(visible);
             m_properties[ i.key() ] = w;
         }
     }

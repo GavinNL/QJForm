@@ -45,7 +45,8 @@ MainWindow::MainWindow(QWidget *parent)
     "type" : "object",
     "ui:order" : ["str", "enum", "file", "dir", "num", "range", "arr", "obj"],
     "properties" : {
-        "str" :  { "type" : "string", "default" : "hello world" },
+        "invisible" :  { "ui:visible" : false, "type" : "string", "default" : "hello world" },
+        "str" :  { "type" : "string", "default" : "hello world", "description" : "This is a tooltip" },
         "enum" : { "type" : "string", "default" : "hello world", "enum" : ["first", "second", "third" ] },
         "file" : { "type" : "string", "default" : "/", "ui:widget" : "file" },
         "dir" :  { "type" : "string", "default" : "/", "ui:widget" : "dir" },

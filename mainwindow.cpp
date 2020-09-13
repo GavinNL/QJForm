@@ -43,12 +43,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto jstr = R"foo({
     "type" : "object",
+    "ui:order" : ["str", "enum", "file", "dir", "num", "range", "arr", "obj"],
     "properties" : {
-        "str" : { "type" : "string", "default" : "hello world" },
+        "str" :  { "type" : "string", "default" : "hello world" },
         "enum" : { "type" : "string", "default" : "hello world", "enum" : ["first", "second", "third" ] },
         "file" : { "type" : "string", "default" : "/", "ui:widget" : "file" },
-        "dir" : { "type" : "string", "default" : "/", "ui:widget" : "dir" },
-        "num" : { "type" : "number", "minimum" : 0, "maximum" : 50, "default" : 10 },
+        "dir" :  { "type" : "string", "default" : "/", "ui:widget" : "dir" },
+        "num" :  { "type" : "number", "minimum" : 0, "maximum" : 50, "default" : 10 },
         "range" : { "type" : "number", "minimum" : 0, "maximum" : 50, "default" : 10, "ui:widget" : "range" },
         "obj" : {
                 "type" : "object",

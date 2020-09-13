@@ -491,6 +491,9 @@ void QJObject::setOneOf(const QJsonObject &J)
         m_propertiesLayout->removeRow( m_propertiesLayout->rowCount()-1);
     }
     m_properties.clear();
+
+    std::map< QString, QWidget*> props;
+
     if( J.contains("properties"))
     {
         auto p = J.find("properties")->toObject();
@@ -503,15 +506,32 @@ void QJObject::setOneOf(const QJsonObject &J)
             auto * w = new QJValue(this);
             auto vO = v.toObject();
 
-            auto t = vO.find("title");
-            if( t!=vO.end()){
-                k = t->toString( k );
+            {
+                auto t = vO.find("title");
+                if( t!=vO.end()){
+                    k = t->toString( k );
+                }
             }
-            w->setSchema(vO);
-            L->addRow( k, w);
 
+            w->setSchema(vO);
+            //L->addRow( k, w);
+
+            props[k] = w;
             m_properties[ i.key() ] = w;
         }
+    }
+    if( J.contains("ui:order"))
+    {
+        auto order = J.find("ui:order")->toArray();
+        for(auto x : order)
+        {
+            L->addRow( x.toString(), props.at(x.toString()));
+            props.erase( x.toString() );
+        }
+    }
+    for(auto & x : props)
+    {
+        L->addRow(x.first,x.second);
     }
 }
 

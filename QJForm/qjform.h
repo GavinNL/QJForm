@@ -14,6 +14,10 @@
 #include <QScrollArea>
 #include <QFormLayout>
 
+namespace QJForm
+{
+
+
 class QJValue;
 
 class QJBase : public QWidget
@@ -161,5 +165,6 @@ private:
 };
 
 
+}
 
 #endif // QJSTRING_H

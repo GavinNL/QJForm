@@ -1,4 +1,4 @@
-#include "qjstring.h"
+#include "qjform.h"
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QToolButton>
@@ -11,6 +11,10 @@
 #include <QTextEdit>
 #include <QLine>
 #include <iostream>
+
+namespace QJForm
+{
+
 
 QJBase::QJBase(QWidget *parent) :
     QWidget(parent)
@@ -675,3 +679,4 @@ void QJForm::setSchema(const QJsonObject &J)
     m_scrollArea->setWidgetResizable(true);
 }
 
+}

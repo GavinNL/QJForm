@@ -29,18 +29,14 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 if(ANDROID)
   add_library(QJForm SHARED
     main.cpp
-    mainwindow.cpp
-    mainwindow.h
-        qjstring.cpp
-        qjstring.h
+    QJForm/qjform.cpp
+    QJForm/qjform.h
   )
 else()
   add_executable(QJForm
     main.cpp
-    mainwindow.cpp
-    mainwindow.h
-    qjstring.cpp
-    qjstring.h
+    QJForm/qjform.cpp
+    QJForm/qjform.h
   )
 endif()
 

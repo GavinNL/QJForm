@@ -44,9 +44,13 @@
                 "items" : [
                     { "type" : "string", "title" : "String" },
                     { "type" : "number" },
-            { "type" : "number" , "minimum" : 0, "maximum" : 100},
-            { "type" : "number" , "minimum" : 0, "maximum" : 100},
-            { "type" : "number" , "minimum" : 0, "maximum" : 100, "ui:widget" : "range" }
+                    { "type" : "number" , "minimum" : 0, "maximum" : 100},
+                    { "type" : "number" , "minimum" : 0, "maximum" : 100},
+                    { "type" : "number" , "minimum" : 0, "maximum" : 100, "ui:widget" : "range" }
+                ],
+                "additionalItems" : [
+                    { "type" : "string", "title" : "String Object"},
+                    { "type" : "number", "title" : "Number Object" }
                 ]
             }
     }

@@ -258,9 +258,129 @@ QJsonValue QJNumber::getValue() const
 QJArray::QJArray(QWidget *parent) :
     QJBase(parent)
 {
-    QFormLayout * h  = new QFormLayout(this);
-    h->setMargin(3);
+    //QFormLayout * h  = new QFormLayout(this);
+    //h->setMargin(3);
     //this->setLayout(h);
+
+    {
+        QFormLayout * l  = new QFormLayout(this);
+
+        m_propertiesLayout  = new QFormLayout();
+
+
+        {
+            m_oneOf = new QComboBox(this);
+        }
+
+
+        QHBoxLayout * h = new QHBoxLayout();
+        h->setAlignment(Qt::AlignRight);
+        auto * add  = new QToolButton(this); add->setText("+");
+
+        connect( add, &QToolButton::released,
+                 [this]()
+        {
+           auto i = m_oneOf->currentIndex();
+           push_back( m_oneOfArray.at(i).toObject());
+           _rebuild();
+        });
+
+        h->addWidget(m_oneOf);
+        h->addWidget(add);
+
+        m_propertiesLayout->setMargin(3);
+
+        l->addRow(m_propertiesLayout);
+        l->addRow(h);
+
+        this->setLayout(l);
+    }
+}
+
+void QJArray::push_back(QJsonObject O)
+{
+    auto * w = new QJValue(this);
+    auto * h = new QHBoxLayout();
+
+    w->setSchema( O );
+    h->addWidget(w);
+
+    auto * up   = new QToolButton(this); up->setArrowType(Qt::UpArrow);
+    auto * down = new QToolButton(this); down->setArrowType(Qt::DownArrow);
+    auto * del  = new QToolButton(this); del->setText("✖");
+
+    connect( down, &QAbstractButton::clicked,
+             [w, this](bool)
+    {
+        size_t ro=0;
+        for(auto & x : m_items)
+        {
+            if( x.m_widget == w)
+            {
+                if( ro != m_items.size()-1)
+                {
+                    std::swap( m_items[ro], m_items[ro+1]);
+                    _rebuild();
+                    return;
+                }
+            }
+            ro++;
+        }
+    });
+
+    connect( up, &QAbstractButton::clicked,
+             [w, this](bool)
+    {
+        size_t ro=0;
+        for(auto & x : m_items)
+        {
+            if( x.m_widget == w)
+            {
+                if( ro!=0)
+                {
+                    std::swap( m_items[ro-1], m_items[ro]);
+                    _rebuild();
+                    return;
+                }
+            }
+            ro++;
+        }
+    });
+
+    connect( del, &QAbstractButton::clicked,
+             [w, this](bool)
+    {
+        int ro=0;
+        for(auto & x : m_items)
+        {
+            if( x.m_widget == w)
+            {
+                delete x.m_widget;
+                delete x.m_down;
+                delete x.m_up;
+                delete x.m_del;
+                delete x.m_layout;
+                m_items.erase( m_items.begin()+ro);
+                return;
+            }
+            ro++;
+        }
+    });
+
+    //QPalette pal = del->palette();
+    //pal.setColor(QPalette::Base, QColor(Qt::red));
+    //del->setAutoFillBackground(true);
+    //del->setPalette(pal);
+    //del->update();
+
+
+    h->addWidget( up);
+    h->addWidget( down);
+    h->addWidget( del);
+
+//            L->addRow(h);
+
+    m_items.push_back({w,h, up, down, del});
 
 }
 
@@ -271,7 +391,7 @@ QJArray::~QJArray()
 
 void QJArray::_rebuild()
 {
-    auto * L = dynamic_cast<QFormLayout*>(layout());
+    auto * L =m_propertiesLayout;
 
     while(L->rowCount())
     {
@@ -297,6 +417,23 @@ void QJArray::_rebuild()
 
 void QJArray::setSchema(const QJsonObject &J)
 {
+     m_oneOf->setVisible(false);
+    if( J.contains("additionalItems"))
+    {
+        m_oneOfArray = J.find("additionalItems")->toArray();
+
+        for(int i=0;i<m_oneOfArray.size();i++)
+        {
+            QString title = "item_" + QString(i);
+            auto obj = m_oneOfArray.at(i).toObject();
+            if( obj.contains("title"))
+                title = obj.find("title")->toString();
+            m_oneOf->addItem( title );
+        }
+
+        if( m_oneOfArray.size() >=2)
+            m_oneOf->setVisible(true);
+    }
     if( J.contains("items"))
     {
         auto p = J.find("items")->toArray();
@@ -304,89 +441,8 @@ void QJArray::setSchema(const QJsonObject &J)
         int ro=0;
         for(auto i=p.begin(); i!=p.end();i++)
         {
-            auto * w = new QJValue(this);
-            auto * h = new QHBoxLayout();
+            push_back( i->toObject() );
 
-            w->setSchema( i->toObject() );
-
-            h->addWidget(w);
-
-            auto * up   = new QToolButton(this); up->setArrowType(Qt::UpArrow);
-            auto * down = new QToolButton(this); down->setArrowType(Qt::DownArrow);
-            auto * del  = new QToolButton(this); del->setText("✖");
-
-            connect( down, &QAbstractButton::clicked,
-                     [w, this](bool)
-            {
-                size_t ro=0;
-                for(auto & x : m_items)
-                {
-                    if( x.m_widget == w)
-                    {
-                        if( ro != m_items.size()-1)
-                        {
-                            std::swap( m_items[ro], m_items[ro+1]);
-                            _rebuild();
-                            return;
-                        }
-                    }
-                    ro++;
-                }
-            });
-
-            connect( up, &QAbstractButton::clicked,
-                     [w, this](bool)
-            {
-                size_t ro=0;
-                for(auto & x : m_items)
-                {
-                    if( x.m_widget == w)
-                    {
-                        if( ro!=0)
-                        {
-                            std::swap( m_items[ro-1], m_items[ro]);
-                            _rebuild();
-                            return;
-                        }
-                    }
-                    ro++;
-                }
-            });
-
-            connect( del, &QAbstractButton::clicked,
-                     [w, this](bool)
-            {
-                int ro=0;
-                for(auto & x : m_items)
-                {
-                    if( x.m_widget == w)
-                    {
-                        delete x.m_widget;
-                        delete x.m_down;
-                        delete x.m_up;
-                        delete x.m_del;
-                        delete x.m_layout;
-                        m_items.erase( m_items.begin()+ro);
-                        return;
-                    }
-                    ro++;
-                }
-            });
-
-            //QPalette pal = del->palette();
-            //pal.setColor(QPalette::Base, QColor(Qt::red));
-            //del->setAutoFillBackground(true);
-            //del->setPalette(pal);
-            //del->update();
-
-
-            h->addWidget( up);
-            h->addWidget( down);
-            h->addWidget( del);
-
-//            L->addRow(h);
-
-            m_items.push_back({w,h, up, down, del});
             ro++;
         }
     }
@@ -425,7 +481,10 @@ QJObject::QJObject(QWidget *parent) :
             this->setOneOf( m_oneOfArray[i].toObject() );//->setText( m_Combo->currentText() );
         });
 
-        l->addWidget(m_oneOf);
+        QHBoxLayout * h = new QHBoxLayout();
+        h->setAlignment(Qt::AlignRight);
+        h->addWidget(m_oneOf);
+        l->addRow(h);
     }
 
     m_propertiesLayout->setMargin(3);
@@ -667,6 +726,13 @@ QJForm::QJForm(QWidget *parent) : QWidget(parent)
                 }
             });
 
+}
+
+QJsonObject QJForm::get() const
+{
+    if( m_jvalue)
+        return m_jvalue->getValue().toObject();
+    return {};
 }
 
 void QJForm::setSchema(const QJsonObject &J)

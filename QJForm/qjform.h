@@ -115,6 +115,11 @@ public:
 
     void _rebuild();
 
+    void push_back( QJsonObject O);
+    QJsonArray m_oneOfArray;
+    QComboBox * m_oneOf=nullptr;
+    QFormLayout * m_propertiesLayout = nullptr;
+
 };
 
 
@@ -154,6 +159,7 @@ public:
 
     void setSchema(QJsonObject const & J);
 
+    QJsonObject get() const;
 Q_SIGNALS:
     void update(QJsonObject);
 

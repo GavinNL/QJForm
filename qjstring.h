@@ -11,7 +11,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QJsonArray>
-
+#include <QScrollArea>
 #include <QFormLayout>
 
 class QJValue;
@@ -135,5 +135,31 @@ private:
     QWidget * m_widget=nullptr;
 
 };
+
+
+
+
+class QJForm : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit QJForm(QWidget *parent = nullptr);
+
+    ~QJForm(){};
+
+    void setSchema(QJsonObject const & J);
+
+Q_SIGNALS:
+    void update(QJsonObject);
+
+private:
+    QPushButton * m_ok=nullptr;
+    QScrollArea * m_scrollArea=nullptr;
+    QJValue     * m_jvalue=nullptr;
+
+};
+
+
 
 #endif // QJSTRING_H

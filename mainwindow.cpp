@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto jstr = R"foo({
     "type" : "object",
+    "title" : "Json Example",
     "ui:order" : ["str", "enum", "file", "dir", "num", "range", "arr", "obj"],
     "properties" : {
         "invisible" :  { "ui:visible" : false, "type" : "string", "default" : "hello world" },
@@ -101,30 +102,20 @@ MainWindow::MainWindow(QWidget *parent)
     x->setSchema(J);
 
 
-    auto W  = new QWidget(this);
-    auto vb = new QVBoxLayout();
-
-
-    W->setLayout( vb );
-
+    auto W  = new QJForm();
+    W->setSchema(J);
 
     this->setCentralWidget(W);
 
-    auto S = new QScrollArea(W);
-    auto submit = new QPushButton("ok");
-
-    vb->addWidget( S );
-    vb->addWidget( submit );
-
-    S->setWidget(x);
-    S->setWidgetResizable(true);
+    if( J.contains("title"))
+    {
+        this->setWindowTitle( J.find("title")->toString());
+    }
 
 
-    connect( submit, &QPushButton::clicked,
-             [x](bool)
+    connect( W, &QJForm::update,
+             [](QJsonObject root)
             {
-            // `ba` contains JSON
-             auto root = x->getValue().toObject();
              QByteArray ba = QJsonDocument(root).toJson();
              std::cout << ba.toStdString() << std::endl;
             });

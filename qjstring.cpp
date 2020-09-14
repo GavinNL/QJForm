@@ -23,7 +23,7 @@ QJString::QJString(QWidget *parent) :
 {
     QHBoxLayout * h  = new QHBoxLayout(this);
     h->setMargin(0);
-    this->setLayout(h);
+    //this->setLayout(h);
 
     m_widget = new QLineEdit(this);
     m_Combo = new QComboBox(this);
@@ -147,7 +147,7 @@ QJNumber::QJNumber(QWidget *parent) :
 {
     QHBoxLayout * h  = new QHBoxLayout(this);
     h->setMargin(0);
-    this->setLayout(h);
+    //this->setLayout(h);
 
     QDoubleSpinBox   * le = new QDoubleSpinBox(this);
     m_slider = new QSlider(Qt::Horizontal, this);
@@ -187,8 +187,8 @@ QJNumber::~QJNumber()
 }
 void QJNumber::setSchema(const QJsonObject &J)
 {
-    double mm = std::numeric_limits<double>::lowest();
-    double MM = std::numeric_limits<double>::max();
+    double mm = static_cast<double>( std::numeric_limits<int>::lowest() );
+    double MM = static_cast<double>( std::numeric_limits<int>::max() );
     double def = 0.0;
 
     {
@@ -256,7 +256,7 @@ QJArray::QJArray(QWidget *parent) :
 {
     QFormLayout * h  = new QFormLayout(this);
     h->setMargin(3);
-    this->setLayout(h);
+    //this->setLayout(h);
 
 }
 
@@ -293,8 +293,6 @@ void QJArray::_rebuild()
 
 void QJArray::setSchema(const QJsonObject &J)
 {
-    auto * L = dynamic_cast<QFormLayout*>(layout());
-
     if( J.contains("items"))
     {
         auto p = J.find("items")->toArray();
@@ -352,7 +350,7 @@ void QJArray::setSchema(const QJsonObject &J)
             });
 
             connect( del, &QAbstractButton::clicked,
-                     [w, this, L](bool)
+                     [w, this](bool)
             {
                 int ro=0;
                 for(auto & x : m_items)
@@ -411,7 +409,7 @@ QJObject::QJObject(QWidget *parent) :
 {
     QFormLayout * l  = new QFormLayout(this);
 
-    m_propertiesLayout  = new QFormLayout(this);
+    m_propertiesLayout  = new QFormLayout();
 
 
     {
@@ -438,8 +436,6 @@ QJObject::~QJObject()
 
 void QJObject::setSchema(const QJsonObject &J)
 {
-    auto * L = m_propertiesLayout;
-
     {
         m_oneOf->clear();
         auto oneOfI = J.find("oneOf");
@@ -459,28 +455,9 @@ void QJObject::setSchema(const QJsonObject &J)
         }
     }
 
-
     setOneOf(J);
-//    auto p = J.find("properties")->toObject();
-
-//    for(auto i=p.begin(); i!=p.end();i++)
-//    {
-//        auto k = i.key();
-//        auto v = i.value();
-
-//        auto * w = new QJValue(this);
-//        auto vO = v.toObject();
-
-//        auto t = vO.find("title");
-//        if( t!=vO.end()){
-//            k = t->toString( k );
-//        }
-//        w->setSchema(vO);
-//        L->addRow( k, w);
-
-//        m_properties[ i.key() ] = w;
-//    }
 }
+
 
 void QJObject::setOneOf(const QJsonObject &J)
 {
@@ -528,7 +505,6 @@ void QJObject::setOneOf(const QJsonObject &J)
             }
 
             w->setSchema(vO);
-            //L->addRow( k, w);
 
             if( visible)
             {
@@ -583,7 +559,7 @@ QJValue::QJValue(QWidget *parent) :
 {
     QHBoxLayout * h  = new QHBoxLayout(this);
     h->setMargin(0);
-    this->setLayout(h);
+    //this->setLayout(h);
 }
 
 QJsonValue QJValue::getValue() const
@@ -654,4 +630,48 @@ QJValue::~QJValue()
 {
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+QJForm::QJForm(QWidget *parent) : QWidget(parent)
+{
+    auto vb     = new QVBoxLayout(this);
+    m_ok = new QPushButton("ok");
+    m_scrollArea      = new QScrollArea(this);
+
+    vb->addWidget( m_scrollArea );
+    vb->addWidget( m_ok );
+
+
+    connect( m_ok, &QPushButton::clicked,
+             [this](bool)
+            {
+                if( m_jvalue)
+                {
+                    auto root = m_jvalue->getValue().toObject();
+                    emit update(root);
+                }
+            });
+
+}
+
+void QJForm::setSchema(const QJsonObject &J)
+{
+    if( m_jvalue)
+        delete m_jvalue;
+    m_jvalue = new QJValue(this);
+    m_jvalue->setSchema(J);
+    m_scrollArea->setWidget(m_jvalue);
+    m_scrollArea->setWidgetResizable(true);
+}
 

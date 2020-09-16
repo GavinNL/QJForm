@@ -73,7 +73,7 @@ public:
 
     QJsonValue getValue() const override;
 
-    void setSchema(const QJsonObject & J) override;
+    void setSchema(const QJsonObject & JJ) override;
     ~QJBoolean();
 
 private:
@@ -91,7 +91,7 @@ public:
 
     QJsonValue getValue() const override;
 
-    void setSchema(const QJsonObject & J) override;
+    void setSchema(const QJsonObject & JJ) override;
     ~QJNumber();
 
 private:
@@ -111,7 +111,7 @@ public:
     QJsonValue getValue() const override;
 
     void setOneOf(const QJsonObject & J);
-    void setSchema(const QJsonObject & J) override;
+    void setSchema(const QJsonObject & JJ) override;
     ~QJObject();
     std::map< QString, std::pair<QString,QJValue*>> m_properties;
 
@@ -131,7 +131,7 @@ public:
 
     QJsonValue getValue() const override;
 
-    void setSchema(const QJsonObject & J) override;
+    void setSchema(const QJsonObject & JJ) override;
     ~QJArray();
 
     struct item_t
@@ -191,6 +191,24 @@ public:
 
     void setSchema(QJsonObject const & J);
 
+
+    QJsonObject dereference(QJsonObject JJ) const;
+
+    /**
+     * @brief getDef
+     * @param ref
+     * @return
+     *
+     * Gets an object using the following reference
+     *
+     * ref = "#/key1/key2/key3"
+     */
+    QJsonObject getDef(QString ref) const;
+
+    QJsonObject const& getSchema() const
+    {
+        return m_schema;
+    }
     QJsonObject get() const;
 Q_SIGNALS:
     void update(QJsonObject);
@@ -200,6 +218,7 @@ private:
     QPushButton * m_ok=nullptr;
     QScrollArea * m_scrollArea=nullptr;
     QJValue     * m_jvalue=nullptr;
+    QJsonObject   m_schema;
 
 };
 

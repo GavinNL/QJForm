@@ -12,11 +12,38 @@
 #include <QColorDialog>
 #include <QLine>
 #include <iostream>
+#include <QJsonDocument>
 
 #include "ToggleSwitch.h"
 
 namespace QJForm
 {
+
+static QJsonObject getRef(QJsonObject const & J, std::string ref)
+{
+    {
+        auto i = ref.begin();
+        auto j = std::find( i, ref.end(), '/');
+
+        QString key = std::string(i,j).c_str();
+
+        if( j==ref.end())
+        {
+            if( J.contains(key) )
+            {
+                return J.find(key)->toObject();
+            }
+            return {};
+        }
+
+        auto it = J.find(key);
+        if( it != J.end())
+        {
+            return getRef( it->toObject(), std::string(j+1, ref.end()));
+        }
+    }
+    return {};
+}
 
 
 QJBase::QJBase(QWidget *parent, QJForm *parentForm) :
@@ -89,8 +116,10 @@ QJString::QJString(QWidget *parent, QJForm *parentForm) :
     });
 }
 
-void QJString::setSchema(const QJsonObject &J)
+void QJString::setSchema(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
     QString wid = "";
     {
         auto mI = J.find("default");
@@ -221,8 +250,10 @@ QJBoolean::~QJBoolean()
 {
 
 }
-void QJBoolean::setSchema(const QJsonObject &J)
+void QJBoolean::setSchema(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
     {
         auto mI = J.find("default");
         if( mI != J.end() )
@@ -319,8 +350,11 @@ QJNumber::~QJNumber()
 {
 
 }
-void QJNumber::setSchema(const QJsonObject &J)
+void QJNumber::setSchema(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
+
     double mm = static_cast<double>( std::numeric_limits<int>::lowest() );
     double MM = static_cast<double>( std::numeric_limits<int>::max() );
     double def = 0.0;
@@ -560,9 +594,11 @@ void QJArray::_rebuild()
 
 }
 
-void QJArray::setSchema(const QJsonObject &J)
+void QJArray::setSchema(const QJsonObject &JJ)
 {
-     m_oneOf->setVisible(false);
+    QJsonObject J = getParentForm()->dereference(JJ);
+
+    m_oneOf->setVisible(false);
     if( J.contains("additionalItems"))
     {
         m_oneOfArray = J.find("additionalItems")->toArray();
@@ -642,8 +678,10 @@ QJObject::~QJObject()
 
 }
 
-void QJObject::setSchema(const QJsonObject &J)
+void QJObject::setSchema(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
     {
         m_oneOf->clear();
         auto oneOfI = J.find("oneOf");
@@ -667,8 +705,10 @@ void QJObject::setSchema(const QJsonObject &J)
 }
 
 
-void QJObject::setOneOf(const QJsonObject &J)
+void QJObject::setOneOf(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
     auto * L = m_propertiesLayout;
 
     while(m_propertiesLayout->rowCount())
@@ -799,11 +839,13 @@ QJsonValue QJValue::getValue() const
     return {};
 }
 
-void QJValue::setSchema(const QJsonObject &J)
+void QJValue::setSchema(const QJsonObject &JJ)
 {
     try{
         if( m_widget )
             delete m_widget;
+
+        QJsonObject J = getParentForm()->dereference(JJ);
 
         auto type = J.find("type")->toString();
 
@@ -899,10 +941,45 @@ QJsonObject QJForm::get() const
     return {};
 }
 
+QJsonObject QJForm::getDef(QString ref) const
+{
+    std::string r = ref.toStdString();
+    if( r.size() > 2)
+    {
+        if( r.front() == '#' && r[1] =='/')
+        {
+            return getRef(m_schema, std::string( r.begin()+2, r.end()));
+        }
+    }
+    return {};
+}
+
+QJsonObject QJForm::dereference(QJsonObject JJ) const
+{
+    QJsonObject J;
+    if( JJ.contains("$ref") )
+    {
+        J = getDef( JJ.find("$ref")->toString() );
+
+        for(auto i : JJ.keys())
+        {
+            J[i] = JJ[i];
+        }
+    }
+    else
+    {
+        J = JJ;
+    }
+    return J;
+}
+
 void QJForm::setSchema(const QJsonObject &J)
 {
+    m_schema = J;
+
     if( m_jvalue)
         delete m_jvalue;
+
     m_jvalue = new QJValue(this, this);
     m_jvalue->setSchema(J);
     m_scrollArea->setWidget(m_jvalue);

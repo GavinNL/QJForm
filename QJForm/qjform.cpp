@@ -146,7 +146,7 @@ void QJString::setSchema(const QJsonObject &J)
         m_Combo->setVisible(false);
         m_colorButton->setVisible(false);
     }
-    else if( wid=="color")
+    else if( wid=="color" || wid=="colour")
     {
         m_dirButton->setVisible(false);
         m_fileButton->setVisible(false);

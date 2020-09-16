@@ -211,11 +211,9 @@ public:
     }
     QJsonObject get() const;
 Q_SIGNALS:
-    void update(QJsonObject);
     void changed();
 
 private:
-    QPushButton * m_ok=nullptr;
     QScrollArea * m_scrollArea=nullptr;
     QJValue     * m_jvalue=nullptr;
     QJsonObject   m_schema;

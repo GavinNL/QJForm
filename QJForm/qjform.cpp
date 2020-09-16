@@ -754,7 +754,6 @@ void QJObject::setOneOf(const QJsonObject &JJ)
                     w->setToolTip(t->toString());
                 }
             }
-
             w->setSchema(vO);
 
             if( visible)
@@ -914,23 +913,12 @@ QJValue::~QJValue()
 
 QJForm::QJForm(QWidget *parent) : QWidget(parent)
 {
-    auto vb     = new QVBoxLayout(this);
-    m_ok = new QPushButton("ok");
-    m_scrollArea      = new QScrollArea(this);
+    auto vb       = new QVBoxLayout(this);
+    m_scrollArea  = new QScrollArea(this);
 
+    vb->setMargin(0);
     vb->addWidget( m_scrollArea );
-    vb->addWidget( m_ok );
 
-
-    connect( m_ok, &QPushButton::clicked,
-             [this](bool)
-            {
-                if( m_jvalue)
-                {
-                    auto root = m_jvalue->getValue().toObject();
-                    emit update(root);
-                }
-            });
 
 }
 

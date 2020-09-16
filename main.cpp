@@ -126,32 +126,43 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
-   // QJsonObject J = ObjectFromString( QString(jstr) );
     QJsonObject J = ObjectFromString( QString(jsonStr.c_str()) );
 
+    auto centralWidget = new QWidget(this);
 
-    auto W  = new QJForm::QJForm();
+    auto layout = new QVBoxLayout();
+    centralWidget->setLayout( layout );
+    this->setCentralWidget(centralWidget);
+
+    auto W  = new QJForm::QJForm(centralWidget);
     W->setSchema(J);
 
-    this->setCentralWidget(W);
+    auto Ok = new QPushButton(this);
+    Ok->setText("Ok");
+    layout->addWidget(W);
+    layout->addWidget(Ok);
+
+    W->setContentsMargins(0,0,0,0);
 
     if( J.contains("title"))
     {
         this->setWindowTitle( J.find("title")->toString());
     }
 
-    //connect( W, &QJForm::QJForm::update,
-    //         [](QJsonObject root)
+
+    connect( Ok, &QPushButton::clicked,
+             [W](bool)
+            {
+                QByteArray ba = QJsonDocument( W->get()).toJson();
+                std::cout << ba.toStdString() << std::endl;
+            });
+
+    //connect( W, &QJForm::QJForm::changed,
+    //         [W]()
     //        {
-    //         QByteArray ba = QJsonDocument(root).toJson();
+    //         QByteArray ba = QJsonDocument( W->get()).toJson();
     //         std::cout << ba.toStdString() << std::endl;
     //        });
-    connect( W, &QJForm::QJForm::changed,
-             [W]()
-            {
-             QByteArray ba = QJsonDocument( W->get()).toJson();
-             std::cout << ba.toStdString() << std::endl;
-            });
 }
 
 MainWindow::~MainWindow()

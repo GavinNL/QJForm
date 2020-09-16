@@ -195,6 +195,8 @@ void QJNumber::setSchema(const QJsonObject &J)
     double MM = static_cast<double>( std::numeric_limits<int>::max() );
     double def = 0.0;
 
+
+
     {
         auto mI = J.find("minimum");
         if( mI != J.end() )
@@ -244,6 +246,10 @@ void QJNumber::setSchema(const QJsonObject &J)
     m_slider->setRange( 0, 0xFFFFFF );
     m_widget->setValue(def);
 
+    if( J.find("type")->toString() == "integer" )
+    {
+        m_widget->setDecimals(0);
+    }
 }
 
 QJsonValue QJNumber::getValue() const
@@ -582,7 +588,8 @@ void QJObject::setOneOf(const QJsonObject &J)
         auto order = J.find("ui:order")->toArray();
         for(auto x : order)
         {
-            L->addRow( x.toString(), props.at(x.toString()));
+            if( props.count(x.toString()))
+                L->addRow( x.toString(), props.at(x.toString()));
             props.erase( x.toString() );
         }
     }
@@ -648,7 +655,7 @@ QJsonValue QJValue::getValue() const
 
 void QJValue::setSchema(const QJsonObject &J)
 {
-    {
+    try{
         if( m_widget )
             delete m_widget;
 
@@ -661,7 +668,7 @@ void QJValue::setSchema(const QJsonObject &J)
             w->setSchema(J);
             this->layout()->addWidget(m_widget);
         }
-        else if( type == "number")
+        else if( type == "number" || type == "integer")
         {
             auto * w = new QJNumber(this);
             m_widget = w;
@@ -683,6 +690,10 @@ void QJValue::setSchema(const QJsonObject &J)
             this->layout()->addWidget(m_widget);
         }
 
+    }
+    catch ( std::exception & e) {
+        std::cerr << e.what() << std::endl;
+        throw e;
     }
     this->updateGeometry();
 

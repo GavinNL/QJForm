@@ -13,20 +13,33 @@
 #include <QJsonArray>
 #include <QScrollArea>
 #include <QFormLayout>
+#include <QCheckBox>
 
 namespace QJForm
 {
 
 
 class QJValue;
+class QJForm;
 
 class QJBase : public QWidget
 {
 public:
-    explicit QJBase(QWidget *parent = nullptr);
+    explicit QJBase(QWidget *parent, QJForm *parentForm);
 
     virtual void setSchema(const QJsonObject & J) = 0;
     virtual QJsonValue getValue() const = 0;
+
+    QJForm* getParentForm()
+    {
+        return m_parentForm;
+    }
+    QJForm const * getParentForm() const
+    {
+        return m_parentForm;
+    }
+protected:
+    QJForm *m_parentForm = nullptr;
 };
 
 
@@ -35,7 +48,7 @@ class QJString : public QJBase
     Q_OBJECT
 
 public:
-    explicit QJString(QWidget *parent = nullptr);
+    explicit QJString(QWidget *parent, QJForm *parentForm);
 
 
     void setSchema(const QJsonObject & J) override;
@@ -47,6 +60,25 @@ public:
     QLineEdit * m_widget  = nullptr;
     QPushButton * m_fileButton = nullptr;
     QPushButton * m_dirButton = nullptr;
+    QPushButton * m_colorButton = nullptr;
+
+};
+
+class QJBoolean : public QJBase
+{
+    Q_OBJECT
+
+public:
+    explicit QJBoolean(QWidget *parent, QJForm *parentForm);
+
+    QJsonValue getValue() const override;
+
+    void setSchema(const QJsonObject & J) override;
+    ~QJBoolean();
+
+private:
+    QCheckBox * m_widget = nullptr;
+    QAbstractButton * m_switch=nullptr;
 
 };
 
@@ -55,7 +87,7 @@ class QJNumber : public QJBase
     Q_OBJECT
 
 public:
-    explicit QJNumber(QWidget *parent = nullptr);
+    explicit QJNumber(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const override;
 
@@ -74,14 +106,14 @@ class QJObject : public QJBase
     Q_OBJECT
 
 public:
-    explicit QJObject(QWidget *parent = nullptr);
+    explicit QJObject(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const override;
 
     void setOneOf(const QJsonObject & J);
     void setSchema(const QJsonObject & J) override;
     ~QJObject();
-    std::map< QString, QJValue*> m_properties;
+    std::map< QString, std::pair<QString,QJValue*>> m_properties;
 
     QJsonArray m_oneOfArray;
     QComboBox * m_oneOf=nullptr;
@@ -95,7 +127,7 @@ class QJArray : public QJBase
     Q_OBJECT
 
 public:
-    explicit QJArray(QWidget *parent = nullptr);
+    explicit QJArray(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const override;
 
@@ -126,12 +158,12 @@ public:
 
 
 
-class QJValue : public QWidget
+class QJValue : public QJBase
 {
     Q_OBJECT
 
 public:
-    explicit QJValue(QWidget *parent = nullptr);
+    explicit QJValue(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const;
 
@@ -162,6 +194,7 @@ public:
     QJsonObject get() const;
 Q_SIGNALS:
     void update(QJsonObject);
+    void changed();
 
 private:
     QPushButton * m_ok=nullptr;

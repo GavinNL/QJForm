@@ -140,10 +140,16 @@ MainWindow::MainWindow(QWidget *parent)
         this->setWindowTitle( J.find("title")->toString());
     }
 
-    connect( W, &QJForm::QJForm::update,
-             [](QJsonObject root)
+    //connect( W, &QJForm::QJForm::update,
+    //         [](QJsonObject root)
+    //        {
+    //         QByteArray ba = QJsonDocument(root).toJson();
+    //         std::cout << ba.toStdString() << std::endl;
+    //        });
+    connect( W, &QJForm::QJForm::changed,
+             [W]()
             {
-             QByteArray ba = QJsonDocument(root).toJson();
+             QByteArray ba = QJsonDocument( W->get()).toJson();
              std::cout << ba.toStdString() << std::endl;
             });
 }

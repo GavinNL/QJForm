@@ -451,9 +451,9 @@ QJArray::QJArray(QWidget *parent, QJForm *parentForm) :
 
         QHBoxLayout * h = new QHBoxLayout();
         h->setAlignment(Qt::AlignRight);
-        auto * add  = new QToolButton(this); add->setText("+");
+        m_add  = new QToolButton(this); m_add->setText("+");
 
-        connect( add, &QToolButton::released,
+        connect( m_add, &QToolButton::released,
                  [this]()
         {
            auto i = m_oneOf->currentIndex();
@@ -462,7 +462,7 @@ QJArray::QJArray(QWidget *parent, QJForm *parentForm) :
         });
 
         h->addWidget(m_oneOf);
-        h->addWidget(add);
+        h->addWidget(m_add);
 
         m_propertiesLayout->setMargin(3);
 
@@ -580,6 +580,8 @@ void QJArray::_rebuild()
         {
             if( h.fieldItem == x.m_layout)
                 found=true;
+
+
         }
         if( !found )
         {
@@ -589,6 +591,7 @@ void QJArray::_rebuild()
 
     for(auto & x : m_items)
     {
+        x.m_del->setVisible( !m_fixedSize );
         L->addRow( x.m_layout );
     }
 
@@ -599,6 +602,9 @@ void QJArray::setSchema(const QJsonObject &JJ)
     QJsonObject J = getParentForm()->dereference(JJ);
 
     m_oneOf->setVisible(false);
+    m_add->setVisible(false);
+    m_fixedSize=true;
+
     if( J.contains("additionalItems"))
     {
         m_oneOfArray = J.find("additionalItems")->toArray();
@@ -613,8 +619,13 @@ void QJArray::setSchema(const QJsonObject &JJ)
         }
 
         if( m_oneOfArray.size() >=2)
+        {
             m_oneOf->setVisible(true);
+        }
+        m_add->setVisible(true);
+        m_fixedSize=false;
     }
+
     if( J.contains("items"))
     {
         auto p = J.find("items")->toArray();

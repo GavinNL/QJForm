@@ -1,3 +1,9 @@
+//
+// This code was taken from here:
+//
+// https://stackoverflow.com/a/62247360
+
+
 #include "ToggleSwitch.h"
 #include <QtCore/QEvent>
 #include <QtCore/QCoreApplication>

@@ -150,7 +150,9 @@ public:
     void push_back( QJsonObject O);
     QJsonArray m_oneOfArray;
     QComboBox * m_oneOf=nullptr;
+    QToolButton * m_add=nullptr;
     QFormLayout * m_propertiesLayout = nullptr;
+    bool m_fixedSize=false;
 
 };
 

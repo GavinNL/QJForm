@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # QtCreator supports the following variables for Android, which are identical to qmake Android variables.
 # Check http://doc.qt.io/qt-5/deployment-android.html for more information.
 # They need to be set before the find_package(Qt5 ...) call.
-
+option(QJFORM_BUILD_EXE "Build the QJForm executable" TRUE)
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
@@ -30,6 +30,7 @@ target_link_libraries(QJForm_lib PUBLIC Qt5::Widgets)
 
 target_include_directories( QJForm_lib PUBLIC QJForm)
 
-
-add_executable(QJForm main.cpp )
-target_link_libraries(QJForm PRIVATE Qt5::Widgets QJForm::QJForm )
+if( QJFORM_BUILD_EXE )
+    add_executable(QJForm main.cpp )
+    target_link_libraries(QJForm PRIVATE Qt5::Widgets QJForm::QJForm )
+endif()

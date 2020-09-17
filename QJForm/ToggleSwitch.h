@@ -4,8 +4,8 @@
 // https://stackoverflow.com/a/62247360
 
 
-#ifndef TOGGLEBUTTON_H
-#define TOGGLEBUTTON_H
+#ifndef QJFORM_TOGGLEBUTTON_H
+#define QJFORM_TOGGLEBUTTON_H
 
 #include <QtWidgets/QAbstractButton>
 

@@ -1,0 +1,124 @@
+stages:
+- analysis
+- build
+- test
+
+.cppcheck:
+  image: ubuntu:bionic
+  stage: analysis
+  before_script:
+    - apt update
+    - apt install -y --no-install-recommends cppcheck=1.82-1 python3-pygments python-pygments
+    - cppcheck --version
+  script:
+    - mkdir cppcheck
+    #- cppcheck . -I include/ --verbose --enable=all --inconclusive --language=c++ --error-exitcode=1
+    - cppcheck . -I include/ --enable=all --inconclusive --xml-version=2 --force --library=windows,posix,gnu . 2> cppcheck/result.xml
+    - cppcheck-htmlreport --source-encoding="iso8859-1" --title="my project name" --source-dir . --report-dir=cppcheck --file=cppcheck/result.xml
+  artifacts:
+    paths:
+      - cppcheck/
+    expire_in: 1 week
+
+
+.build_template: &job_definition
+    #image: conanio/gcc7
+    stage: build
+    before_script:
+      - env
+      - sudo apt update
+      #- sudo apt install -y python3-pip
+      #- sudo pip3 install gcovr
+      #- wget https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2-Linux-x86_64.sh
+      #- chmod +x cmake-3.16.2-Linux-x86_64.sh
+      #- sudo ./cmake-3.16.2-Linux-x86_64.sh --skip-license --prefix=/usr/local
+    script:
+      - echo $USER    ---   $HOME
+      - cmake --version
+      - echo Working directory $PWD
+      ### Test that we can build the library properly
+      - mkdir -p build && cd build
+      - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+      - conan install .. -s compiler.libcxx=libstdc++11 --build missing
+      - cmake .. -DCMAKE_BUILD_TYPE=Release
+      - cmake --build .
+      - cp wxJForm ../artifacts
+      #- cpack -G DEB
+    artifacts:
+      paths:
+        - artifacts/*
+      expire_in: 1 week
+
+#build-gcc5:
+#    <<: *job_definition           # Merge the contents of the 'job_definition' alias
+#    image: conanio/gcc5
+
+#build-gcc6:
+#    <<: *job_definition           # Merge the contents of the 'job_definition' alias
+#    image: conanio/gcc6
+
+#build-gcc7:
+#    <<: *job_definition           # Merge the contents of the 'job_definition' alias
+#    image: conanio/gcc7
+
+#build-gcc8:
+#    <<: *job_definition           # Merge the contents of the 'job_definition' alias
+#    image: conanio/gcc8
+
+#build-gcc9:
+#    <<: *job_definition           # Merge the contents of the 'job_definition' alias
+#    image: conanio/gcc9
+
+#build-clang60:
+#    <<: *job_definition
+#    image: conanio/clang60
+
+#build-clang40:
+#    <<: *job_definition
+#    image: conanio/clang40
+
+#build-clang50:
+#    <<: *job_definition
+#    image: conanio/clang50
+
+#build-clang7:
+#    <<: *job_definition
+#    image: conanio/clang7
+
+#build-clang39:
+#    <<: *job_definition
+#    image: conanio/clang39
+
+
+.ubuntu_base: &ubuntu_job_def
+    image: ubuntu:bionic
+    stage: build
+    before_script:
+      - env
+      - apt update
+      - apt install -y gcc g++ qtbase5-dev patchelf wget
+      - wget https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2-Linux-x86_64.sh
+      - chmod +x cmake-3.16.2-Linux-x86_64.sh
+      - ./cmake-3.16.2-Linux-x86_64.sh --skip-license --prefix=/usr/local
+    script:
+      - echo $USER    ---   $HOME
+      - cmake --version
+      - echo Working directory $PWD
+
+      - mkdir -p build && cd build
+      - cmake .. -DCMAKE_BUILD_TYPE=Release
+      - cmake --build .
+      - patchelf --remove-rpath QJForm
+      - mkdir -p ../artifacts
+      - cp QJForm ../artifacts
+    artifacts:
+      paths:
+        - artifacts/*
+
+build-bionic:
+    <<: *ubuntu_job_def
+    image: ubuntu:bionic
+
+build-focal:
+    <<: *ubuntu_job_def
+    image: ubuntu:bionic

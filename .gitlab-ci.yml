@@ -96,7 +96,7 @@ stages:
     before_script:
       - env
       - apt update
-      - apt install -y gcc g++ qtbase5-dev patchelf wget
+      - apt install -y gcc g++ qtbase5-dev patchelf wget build-essential
       - wget https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2-Linux-x86_64.sh
       - chmod +x cmake-3.16.2-Linux-x86_64.sh
       - ./cmake-3.16.2-Linux-x86_64.sh --skip-license --prefix=/usr/local

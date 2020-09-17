@@ -28,7 +28,7 @@ will produce a UI which you can use to set the values.
 
 
 ```Bash
-cat samples/numbers.json | QJForm --json
+cat samples/numbers.json | QJForm
 ```
 ![alt text](images/numbers.png "Logo Title Text 1")
 
@@ -43,8 +43,7 @@ Pressing OK will print out the JSON data to standard output.
 
 ```
 
-Without the `--json` flag, the values will be printed to standard out as
-bash variables.
+Use the  `-b` flag to print the values as bash variables
 
 ```
 float_range=0.4
@@ -53,17 +52,10 @@ standard_float=3.145
 standard_integer=66
 ```
 
-We can then execute the following using the `--export` and `--prefix`
-flag to export some variables with the prefix MYVAR_
-
 ```bash
-$ eval $( cat samples/numbers.json | QJForm --export --prefix MYVAR_)
-$ env | grep MYVAR
-MYVAR_standard_integer=66
-MYVAR_float_range=0.283379
-MYVAR_integer_range=2
-MYVAR_standard_float=3.145
-
+$ eval $( cat samples/numbers.json | QJForm -b)
+$ echo $float_range
+0.283379
 ```
 
 

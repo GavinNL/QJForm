@@ -3,7 +3,65 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMainWindow>
+#include <QCommandLineParser>
 #include <QJForm/qjform.h>
+
+bool asBash=false;
+
+void printJsonBash(QJsonValue J, std::string prefix)
+{
+    if( J.isObject() )
+    {
+        auto Jo = J.toObject();
+        for(auto key : Jo.keys() )
+        {
+            auto val = Jo.find(key);
+            if( val->isString() )
+            {
+                std::cout << prefix << key.toStdString() << "=\"" << val->toString().toStdString() << "\"" << std::endl;
+            }
+            else if( val->isDouble() )
+            {
+                std::cout << prefix << key.toStdString() <<  "=" << val->toDouble() << std::endl;
+            }
+            else if( val->isBool())
+            {
+                std::cout << prefix << key.toStdString() <<  "=" << (val->toBool() ? std::string("true") : std::string("false")) << std::endl;
+            }
+            else
+            {
+                auto new_prefix = prefix + key.toStdString() + "_";
+                printJsonBash( *val, new_prefix);
+            }
+        }
+    }
+    else if (J.isArray())
+    {
+        uint32_t i=0;
+        auto Ja = J.toArray();
+        for(auto val : Ja)
+        {
+            if( val.isString() )
+            {
+                std::cout << prefix << i << "=\"" << val.toString().toStdString() << "\"" << std::endl;
+            }
+            else if( val.isDouble() )
+            {
+                std::cout << prefix << i <<"=" << val.toDouble() << std::endl;
+            }
+            else if( val.isBool())
+            {
+                std::cout << prefix << i << "=" << ( val.toBool() ? std::string("true") : std::string("false")) << std::endl;
+            }
+            else
+            {
+                auto new_prefix = prefix + std::to_string(i) + "_";
+                printJsonBash(val, new_prefix);
+            }
+            i++;
+        }
+    }
+}
 
 class MainWindow : public QMainWindow
 {
@@ -153,16 +211,18 @@ MainWindow::MainWindow(QWidget *parent)
     connect( Ok, &QPushButton::clicked,
              [W](bool)
             {
-                QByteArray ba = QJsonDocument( W->get()).toJson();
-                std::cout << ba.toStdString() << std::endl;
-            });
 
-    //connect( W, &QJForm::QJForm::changed,
-    //         [W]()
-    //        {
-    //         QByteArray ba = QJsonDocument( W->get()).toJson();
-    //         std::cout << ba.toStdString() << std::endl;
-    //        });
+                QByteArray ba = QJsonDocument( W->get()).toJson();
+
+                if( asBash)
+                {
+                    printJsonBash( QJsonValue(W->get()) , "export " );
+                }
+                else
+                {
+                    std::cout << ba.toStdString() << std::endl;
+                }
+            });
 }
 
 MainWindow::~MainWindow()
@@ -175,6 +235,22 @@ MainWindow::~MainWindow()
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription("QJForm");
+    parser.addHelpOption();
+
+    // A boolean option with a single name (-p)
+    QCommandLineOption showProgressOption("b", QCoreApplication::translate("main", "Print output as bash variables instead of json"));
+    parser.addOption(showProgressOption);
+
+    // Process the actual command line arguments given by the user
+    parser.process(a);
+
+    const QStringList args = parser.positionalArguments();
+    // source is args.at(0), destination is args.at(1)
+
+    asBash = parser.isSet(showProgressOption);
 
 
     MainWindow w;

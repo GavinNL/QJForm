@@ -84,6 +84,7 @@
                         "title" : "Arrays",
                         "ui:width" : 500,
                         "ui:height" : 800,
+                        "ui:widget" : "tabs",
                         "properties" :
                         {
 

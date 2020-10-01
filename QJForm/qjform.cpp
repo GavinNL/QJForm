@@ -11,6 +11,7 @@
 #include <QTextEdit>
 #include <QColorDialog>
 #include <QLine>
+#include <QTabWidget>
 #include <iostream>
 #include <QJsonDocument>
 
@@ -682,6 +683,46 @@ QJObject::QJObject(QWidget *parent, QJForm *parentForm) :
     m_propertiesLayout->setMargin(3);
 
     l->addRow(m_propertiesLayout);
+
+//    {
+
+//        m_tabwidget = new QTabWidget(this);
+//        l->addRow(m_tabwidget);
+
+//        tabWidget->setObjectName(QString::fromUtf8("tabWidget"));
+//        tabWidget->setGeometry(QRect(110, 70, 551, 441));
+
+//        {
+//            auto FirstTab = new QWidget();
+//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
+//            tabWidget->addTab(FirstTab, QString("Tab 1"));
+//            auto verticalLayout = new QVBoxLayout(FirstTab);
+//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+
+//            auto textEdit = new QTextEdit(FirstTab);
+//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
+
+//            verticalLayout->addWidget(textEdit);
+
+
+//        }
+//        {
+//            auto FirstTab = new QWidget();
+//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
+
+//            auto verticalLayout = new QVBoxLayout(FirstTab);
+//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+
+//            auto textEdit = new QTextEdit(FirstTab);
+//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
+
+//            verticalLayout->addWidget(textEdit);
+
+//            tabWidget->addTab(FirstTab, QString("Tab 1"));
+//        }
+
+//    }
+
 }
 
 QJObject::~QJObject()
@@ -712,6 +753,9 @@ void QJObject::setSchema(const QJsonObject &JJ)
         }
     }
 
+
+
+
     setOneOf(J);
 }
 
@@ -722,6 +766,12 @@ void QJObject::setOneOf(const QJsonObject &JJ)
 
     auto * L = m_propertiesLayout;
 
+    if( m_tabwidget )
+    {
+        m_tabwidget->deleteLater();
+        m_tabwidget=nullptr;
+    }
+
     while(m_propertiesLayout->rowCount())
     {
         m_propertiesLayout->removeRow( m_propertiesLayout->rowCount()-1);
@@ -729,6 +779,8 @@ void QJObject::setOneOf(const QJsonObject &JJ)
     m_properties.clear();
 
     std::map< QString, std::pair<QString,QWidget*> > props;
+
+
 
     if( J.contains("properties"))
     {
@@ -775,19 +827,56 @@ void QJObject::setOneOf(const QJsonObject &JJ)
             m_properties[ i.key() ] = {title,w};
         }
     }
+
+
+    QString wid="rows";
+    if( J.contains("ui:widget") )
+    {
+        wid = J.find("ui:widget")->toString();
+    }
+
+
+    if( wid == "tabs")
+    {
+        m_tabwidget = new QTabWidget(this);
+        m_propertiesLayout->addRow(m_tabwidget);
+    }
+
+
     if( J.contains("ui:order"))
     {
         auto order = J.find("ui:order")->toArray();
         for(auto x : order)
         {
             if( props.count(x.toString()))
-                L->addRow( props.at(x.toString()).first, props.at(x.toString()).second);
+            {
+                if( wid=="tabs")
+                {
+                    m_tabwidget->addTab( props.at(x.toString()).second, props.at(x.toString()).first);
+                }
+                else
+                {
+                    L->addRow( props.at(x.toString()).first, props.at(x.toString()).second);
+                }
+            }
             props.erase( x.toString() );
         }
     }
-    for(auto & x : props)
+
+
+    else
     {
-        L->addRow(x.second.first,x.second.second);
+        for(auto & x : props)
+        {
+            if( wid=="tabs")
+            {
+                m_tabwidget->addTab( x.second.second, x.second.first);
+            }
+            else
+            {
+                L->addRow(x.second.first,x.second.second);
+            }
+        }
     }
 }
 
@@ -910,7 +999,87 @@ QJValue::~QJValue()
 }
 
 
+void QJString::setValue(QString S)
+{
+    if( m_Combo)
+    {
+        for(int i=0;i< m_Combo->count();i++)
+        {
+            if( m_Combo->itemText(i) == S )
+            {
+                m_Combo->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+    if(m_widget)
+        m_widget->setText(S);
+}
 
+void QJBoolean::setValue(bool b)
+{
+    if( m_switch)
+    {
+        m_switch->setChecked(b);
+    }
+    if(m_widget)
+        m_widget->setChecked(b);
+}
+
+
+void QJNumber::setValue(double b)
+{
+    m_widget->setValue(b);
+}
+
+void QJArray::setValue(QJsonArray A)
+{
+    auto mm = std::min( static_cast<size_t>(A.size()), m_items.size() );
+    for(size_t i=0;i<mm;i++)
+    {
+        m_items[i].m_widget->setValue( A[i] );
+    }
+}
+
+void QJObject::setValue(QJsonObject A)
+{
+    for(auto k : A.keys())
+    {
+        if( m_properties.count(k))
+        {
+            m_properties.at(k).second->setValue( A[k]);
+        }
+    }
+}
+
+void QJValue::setValue(QJsonValue J)
+{
+    if( auto * w = dynamic_cast<QJNumber*>(m_widget))
+    {
+        if( J.isDouble())
+            w->setValue( J.toDouble());
+    }
+    else if( auto * w = dynamic_cast<QJString*>(m_widget))
+    {
+        if( J.isString())
+            w->setValue(J.toString());
+    }
+    else if( auto * w = dynamic_cast<QJObject*>(m_widget))
+    {
+        if( J.isObject())
+            w->setValue(J.toObject());
+    }
+    else if( auto * w = dynamic_cast<QJArray*>(m_widget))
+    {
+        if( J.isArray())
+            w->setValue( J.toArray() );
+    }
+    else if( auto * w = dynamic_cast<QJBoolean*>(m_widget))
+    {
+        if( J.isBool())
+            w->setValue(J.toBool());
+    }
+}
 
 
 
@@ -983,6 +1152,12 @@ void QJForm::setSchema(const QJsonObject &J)
     m_jvalue->setSchema(J);
     m_scrollArea->setWidget(m_jvalue);
     m_scrollArea->setWidgetResizable(true);
+}
+
+void QJForm::setValue(QJsonObject const &J)
+{
+    QJsonValue V(J);
+    m_jvalue->setValue( V );
 }
 
 }

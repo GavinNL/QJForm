@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QComboBox>
+#include <QTabWidget>
 
 #include <QJsonObject>
 #include <QJsonValue>
@@ -54,6 +55,8 @@ public:
     void setSchema(const QJsonObject & J) override;
     QJsonValue getValue() const override;
 
+    void setValue(QString S);
+
     ~QJString();
 
     QComboBox * m_Combo  = nullptr;
@@ -72,6 +75,7 @@ public:
     explicit QJBoolean(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const override;
+    void setValue(bool b);
 
     void setSchema(const QJsonObject & JJ) override;
     ~QJBoolean();
@@ -90,6 +94,7 @@ public:
     explicit QJNumber(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const override;
+    void setValue(double d);
 
     void setSchema(const QJsonObject & JJ) override;
     ~QJNumber();
@@ -109,6 +114,7 @@ public:
     explicit QJObject(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const override;
+    void setValue(QJsonObject J);
 
     void setOneOf(const QJsonObject & J);
     void setSchema(const QJsonObject & JJ) override;
@@ -118,7 +124,7 @@ public:
     QJsonArray m_oneOfArray;
     QComboBox * m_oneOf=nullptr;
     QFormLayout * m_propertiesLayout = nullptr;
-
+    QTabWidget * m_tabwidget = nullptr;
 };
 
 
@@ -130,6 +136,7 @@ public:
     explicit QJArray(QWidget *parent, QJForm *parentForm);
 
     QJsonValue getValue() const override;
+    void setValue(QJsonArray A);
 
     void setSchema(const QJsonObject & JJ) override;
     ~QJArray();
@@ -173,6 +180,7 @@ public:
 
     void setSchema(QJsonObject const & J);
 
+    void setValue(QJsonValue J);
 
 private:
     QWidget * m_widget=nullptr;
@@ -195,6 +203,9 @@ public:
 
 
     QJsonObject dereference(QJsonObject JJ) const;
+
+
+    void setValue(QJsonObject const &J);
 
     /**
      * @brief getDef

@@ -14,7 +14,7 @@
 #include <QTabWidget>
 #include <iostream>
 #include <QJsonDocument>
-
+#include <QListWidget>
 #include "ToggleSwitch.h"
 
 namespace QJForm
@@ -471,6 +471,13 @@ QJArray::QJArray(QWidget *parent, QJForm *parentForm) :
         l->addRow(h);
 
         this->setLayout(l);
+
+        {
+
+            m_ListWidget = new QListWidget(this);
+            l->addRow(m_ListWidget);
+        }
+
     }
 }
 
@@ -486,6 +493,9 @@ void QJArray::push_back(QJsonObject O)
     auto * down = new QToolButton(this); down->setArrowType(Qt::DownArrow);
     auto * del  = new QToolButton(this); del->setText("✖");
 
+    up->setMaximumSize( 25,25);
+    down->setMaximumSize( 25,25);
+    del->setMaximumSize( 25,25);
     connect( down, &QAbstractButton::clicked,
              [w, this](bool)
     {
@@ -606,6 +616,8 @@ void QJArray::setSchema(const QJsonObject &JJ)
     m_add->setVisible(false);
     m_fixedSize=true;
 
+    m_ListWidget->clear();
+    m_ListWidget->hide();
     if( J.contains("additionalItems"))
     {
         m_oneOfArray = J.find("additionalItems")->toArray();
@@ -627,17 +639,44 @@ void QJArray::setSchema(const QJsonObject &JJ)
         m_fixedSize=false;
     }
 
+    bool uniqueItems=false;
+    if( J.contains("uniqueItems") )
+    {
+        uniqueItems = J.find("uniqueItems")->toBool();
+    }
+
     if( J.contains("items"))
     {
-        auto p = J.find("items")->toArray();
+        auto it = J.find("items");
 
-        int ro=0;
-        for(auto i=p.begin(); i!=p.end();i++)
+        if( it->isArray())
         {
-            push_back( i->toObject() );
+            auto p = it->toArray();
 
-            ro++;
+            int ro=0;
+            for(auto i=p.begin(); i!=p.end();i++)
+            {
+                push_back( i->toObject() );
+
+                ro++;
+            }
         }
+        else if (it->isObject())
+        {
+            auto p = it->toObject();
+
+            if(p.find("type")->toString() == "string" && p.contains("enum") && uniqueItems )
+            {
+                int i=0;
+                for(auto v : p.find("enum")->toArray())
+                {
+                    m_ListWidget->insertItem(i++, v.toString() );
+                }
+                m_ListWidget->setSelectionMode(QAbstractItemView::SelectionMode::MultiSelection);
+                m_ListWidget->show();
+            }
+        }
+
     }
     _rebuild();
 }
@@ -645,9 +684,19 @@ void QJArray::setSchema(const QJsonObject &JJ)
 QJsonValue QJArray::getValue() const
 {
     QJsonArray O;
-    for(auto & x : m_items)
+    if( m_ListWidget->count() == 0)
     {
-        O.push_back( x.m_widget->getValue() );
+        for(auto & x : m_items)
+        {
+            O.push_back( x.m_widget->getValue() );
+        }
+    }
+    else
+    {
+        for(auto x : m_ListWidget->selectedItems()    )
+        {
+            O.push_back( x->text() );
+        }
     }
     return O;
 }

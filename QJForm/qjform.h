@@ -15,6 +15,7 @@
 #include <QScrollArea>
 #include <QFormLayout>
 #include <QCheckBox>
+#include <QListWidget>
 
 namespace QJForm
 {
@@ -159,6 +160,7 @@ public:
     QComboBox * m_oneOf=nullptr;
     QToolButton * m_add=nullptr;
     QFormLayout * m_propertiesLayout = nullptr;
+    QListWidget * m_ListWidget=nullptr;
     bool m_fixedSize=false;
 
 };

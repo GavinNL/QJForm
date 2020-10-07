@@ -620,8 +620,15 @@ void QJArray::setSchema(const QJsonObject &JJ)
     m_ListWidget->hide();
     if( J.contains("additionalItems"))
     {
-        m_oneOfArray = J.find("additionalItems")->toArray();
-
+        auto aItems = J.find("additionalItems");
+        if( aItems->isArray() )
+        {
+            m_oneOfArray = aItems->toArray();
+        }
+        else if( aItems->isObject() )
+        {
+            m_oneOfArray.push_back( aItems->toObject() );
+        }
         for(int i=0;i<m_oneOfArray.size();i++)
         {
             QString title = "item_" + QString(i);

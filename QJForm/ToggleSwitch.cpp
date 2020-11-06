@@ -10,6 +10,7 @@
 #include <QtCore/QPropertyAnimation> 
 #include <QtGui/QPainter> 
 #include <QtGui/QMouseEvent> 
+#include <QPainterPath>
 
 namespace QJForm
 {

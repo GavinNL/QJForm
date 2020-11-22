@@ -9,21 +9,52 @@
 #include <QSlider>
 #include <QFileDialog>
 #include <QTextEdit>
+#include <QColorDialog>
 #include <QLine>
+#include <QTabWidget>
 #include <iostream>
+#include <QJsonDocument>
+#include <QListWidget>
+#include "ToggleSwitch.h"
 
 namespace QJForm
 {
 
+static QJsonObject getRef(QJsonObject const & J, std::string ref)
+{
+    {
+        auto i = ref.begin();
+        auto j = std::find( i, ref.end(), '/');
 
-QJBase::QJBase(QWidget *parent) :
-    QWidget(parent)
+        QString key = std::string(i,j).c_str();
+
+        if( j==ref.end())
+        {
+            if( J.contains(key) )
+            {
+                return J.find(key)->toObject();
+            }
+            return {};
+        }
+
+        auto it = J.find(key);
+        if( it != J.end())
+        {
+            return getRef( it->toObject(), std::string(j+1, ref.end()));
+        }
+    }
+    return {};
+}
+
+
+QJBase::QJBase(QWidget *parent, QJForm *parentForm) :
+    QWidget(parent), m_parentForm(parentForm)
 {
 }
 
 
-QJString::QJString(QWidget *parent) :
-    QJBase(parent)
+QJString::QJString(QWidget *parent, QJForm *parentForm) :
+    QJBase(parent, parentForm)
 {
     QHBoxLayout * h  = new QHBoxLayout(this);
     h->setMargin(0);
@@ -33,11 +64,19 @@ QJString::QJString(QWidget *parent) :
     m_Combo = new QComboBox(this);
     m_fileButton = new QPushButton(this);
     m_dirButton = new QPushButton(this);
+    m_colorButton = new QPushButton(this);
 
     h->addWidget(m_widget,0);
     h->addWidget(m_fileButton,0);
     h->addWidget(m_dirButton,0);
+    h->addWidget(m_colorButton,0);
     h->addWidget(m_Combo,0);
+
+    connect(m_widget, &QLineEdit::textChanged,
+    [this]()
+    {
+        emit getParentForm()->changed();
+    });
 
     connect(m_fileButton, &QPushButton::clicked,
     [this](bool )
@@ -57,6 +96,20 @@ QJString::QJString(QWidget *parent) :
         //m_fileButton->setText(fileName);
     });
 
+    connect(m_colorButton, &QPushButton::clicked,
+    [this](bool )
+    {
+        //auto fileName = QFileDialog::getOpenFileName(this, tr("Choose File"), "/home/jana", tr("Image Files (*.png *.jpg *.bmp)"));
+       // auto fileName = QFileDialog::getExistingDirectory(this);
+        auto c = QColorDialog::getColor(Qt::white,this,"Choose a Color", QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
+        int r,g,b,a;
+        c.getRgb(&r,&g,&b,&a);
+        char txt[25];
+        std::sprintf(txt, "#%02x%02x%02x%02x",r,g,b,a);
+        m_widget->setText(txt);
+
+    });
+
     connect(m_Combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
     [this](int)
     {
@@ -64,8 +117,10 @@ QJString::QJString(QWidget *parent) :
     });
 }
 
-void QJString::setSchema(const QJsonObject &J)
+void QJString::setSchema(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
     QString wid = "";
     {
         auto mI = J.find("default");
@@ -100,6 +155,7 @@ void QJString::setSchema(const QJsonObject &J)
             m_fileButton->setVisible(false);
             m_dirButton->setVisible(false);
             m_widget->setVisible(false);
+            m_colorButton->setVisible(false);
             m_Combo->setVisible(true);
             return;
         }
@@ -111,18 +167,28 @@ void QJString::setSchema(const QJsonObject &J)
         m_fileButton->setVisible(true);
         m_dirButton->setVisible(false);
         m_Combo->setVisible(false);
+        m_colorButton->setVisible(false);
     }
     else if( wid == "dir")
     {
         m_fileButton->setVisible(false);
         m_dirButton->setVisible(true);
         m_Combo->setVisible(false);
+        m_colorButton->setVisible(false);
+    }
+    else if( wid=="color" || wid=="colour")
+    {
+        m_dirButton->setVisible(false);
+        m_fileButton->setVisible(false);
+        m_Combo->setVisible(false);
+        m_colorButton->setVisible(true);
     }
     else
     {
         m_dirButton->setVisible(false);
         m_fileButton->setVisible(false);
         m_Combo->setVisible(false);
+        m_colorButton->setVisible(false);
     }
 
 }
@@ -142,12 +208,100 @@ QJsonValue QJString::getValue() const
     return {};
 }
 
+
 //==============================================================================
 
 
 
-QJNumber::QJNumber(QWidget *parent) :
-    QJBase(parent)
+QJBoolean::QJBoolean(QWidget *parent, QJForm *parentForm) :
+    QJBase(parent, parentForm)
+{
+    QHBoxLayout * h  = new QHBoxLayout(this);
+    h->setMargin(0);
+
+    QCheckBox   * le = new QCheckBox(this);
+    auto s = new ToggleSwitch(8,10,this);
+
+    le->setLayoutDirection(Qt::RightToLeft);
+    m_switch = s;
+    connect(m_switch, &QAbstractButton::clicked,
+    [this](bool ch)
+    {
+        m_widget->setChecked(ch);
+    });
+
+    m_widget = le;
+
+    connect(m_widget, &QAbstractButton::toggled,
+    [this]()
+    {
+        emit getParentForm()->changed();
+    });
+
+
+    h->setAlignment(Qt::AlignLeft);
+
+
+    h->addWidget(le, 1);
+    h->addWidget(s,1);
+    h->update();
+}
+
+QJBoolean::~QJBoolean()
+{
+
+}
+void QJBoolean::setSchema(const QJsonObject &JJ)
+{
+    QJsonObject J = getParentForm()->dereference(JJ);
+
+    {
+        auto mI = J.find("default");
+        if( mI != J.end() )
+        {
+            auto def = mI->toBool(false);
+            m_widget->setChecked(def);
+            m_switch->setChecked(def);
+        }
+    }
+    QString wid = "checkbox";
+
+    {
+        auto mI = J.find("ui:widget");
+        if( mI != J.end() )
+        {
+            wid = mI->toString("checkbox");
+        }
+    }
+
+    if( wid == "switch")
+    {
+        m_switch->setVisible(true);
+        m_widget->setVisible(false);
+    }
+    else
+    {
+        m_switch->setVisible(false);
+        m_widget->setVisible(true);
+    }
+    (void)J;
+}
+
+QJsonValue QJBoolean::getValue() const
+{
+    return m_widget->isChecked();
+}
+
+
+//==============================================================================
+
+
+//==============================================================================
+
+
+
+QJNumber::QJNumber(QWidget *parent, QJForm *parentForm) :
+    QJBase(parent, parentForm)
 {
     QHBoxLayout * h  = new QHBoxLayout(this);
     h->setMargin(0);
@@ -159,6 +313,14 @@ QJNumber::QJNumber(QWidget *parent) :
 
     h->addWidget(m_slider,10);
     h->addWidget(le, 1);
+
+    connect(m_widget, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                //m_widget,
+            [this](double)
+            {
+                emit getParentForm()->changed();
+            }
+            );
 
     connect(m_slider, &QSlider::valueChanged,
                 //m_widget,
@@ -189,14 +351,23 @@ QJNumber::~QJNumber()
 {
 
 }
-void QJNumber::setSchema(const QJsonObject &J)
+void QJNumber::setSchema(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
+
     double mm = static_cast<double>( std::numeric_limits<int>::lowest() );
     double MM = static_cast<double>( std::numeric_limits<int>::max() );
     double def = 0.0;
 
 
-
+    {
+        auto mI = J.find("default");
+        if( mI != J.end() )
+        {
+            def = mI->toDouble(0.0);
+        }
+    }
     {
         auto mI = J.find("minimum");
         if( mI != J.end() )
@@ -261,8 +432,8 @@ QJsonValue QJNumber::getValue() const
 //==============================================================================
 
 
-QJArray::QJArray(QWidget *parent) :
-    QJBase(parent)
+QJArray::QJArray(QWidget *parent, QJForm *parentForm) :
+    QJBase(parent, parentForm)
 {
     //QFormLayout * h  = new QFormLayout(this);
     //h->setMargin(3);
@@ -281,9 +452,9 @@ QJArray::QJArray(QWidget *parent) :
 
         QHBoxLayout * h = new QHBoxLayout();
         h->setAlignment(Qt::AlignRight);
-        auto * add  = new QToolButton(this); add->setText("+");
+        m_add  = new QToolButton(this); m_add->setText("+");
 
-        connect( add, &QToolButton::released,
+        connect( m_add, &QToolButton::released,
                  [this]()
         {
            auto i = m_oneOf->currentIndex();
@@ -292,7 +463,7 @@ QJArray::QJArray(QWidget *parent) :
         });
 
         h->addWidget(m_oneOf);
-        h->addWidget(add);
+        h->addWidget(m_add);
 
         m_propertiesLayout->setMargin(3);
 
@@ -300,12 +471,19 @@ QJArray::QJArray(QWidget *parent) :
         l->addRow(h);
 
         this->setLayout(l);
+
+        {
+
+            m_ListWidget = new QListWidget(this);
+            l->addRow(m_ListWidget);
+        }
+
     }
 }
 
 void QJArray::push_back(QJsonObject O)
 {
-    auto * w = new QJValue(this);
+    auto * w = new QJValue(this, m_parentForm);
     auto * h = new QHBoxLayout();
 
     w->setSchema( O );
@@ -315,6 +493,9 @@ void QJArray::push_back(QJsonObject O)
     auto * down = new QToolButton(this); down->setArrowType(Qt::DownArrow);
     auto * del  = new QToolButton(this); del->setText("✖");
 
+    up->setMaximumSize( 25,25);
+    down->setMaximumSize( 25,25);
+    del->setMaximumSize( 25,25);
     connect( down, &QAbstractButton::clicked,
              [w, this](bool)
     {
@@ -327,6 +508,7 @@ void QJArray::push_back(QJsonObject O)
                 {
                     std::swap( m_items[ro], m_items[ro+1]);
                     _rebuild();
+                    emit getParentForm()->changed();
                     return;
                 }
             }
@@ -346,6 +528,7 @@ void QJArray::push_back(QJsonObject O)
                 {
                     std::swap( m_items[ro-1], m_items[ro]);
                     _rebuild();
+                    emit getParentForm()->changed();
                     return;
                 }
             }
@@ -367,6 +550,7 @@ void QJArray::push_back(QJsonObject O)
                 delete x.m_del;
                 delete x.m_layout;
                 m_items.erase( m_items.begin()+ro);
+                emit getParentForm()->changed();
                 return;
             }
             ro++;
@@ -407,6 +591,8 @@ void QJArray::_rebuild()
         {
             if( h.fieldItem == x.m_layout)
                 found=true;
+
+
         }
         if( !found )
         {
@@ -416,18 +602,33 @@ void QJArray::_rebuild()
 
     for(auto & x : m_items)
     {
+        x.m_del->setVisible( !m_fixedSize );
         L->addRow( x.m_layout );
     }
 
 }
 
-void QJArray::setSchema(const QJsonObject &J)
+void QJArray::setSchema(const QJsonObject &JJ)
 {
-     m_oneOf->setVisible(false);
+    QJsonObject J = getParentForm()->dereference(JJ);
+
+    m_oneOf->setVisible(false);
+    m_add->setVisible(false);
+    m_fixedSize=true;
+
+    m_ListWidget->clear();
+    m_ListWidget->hide();
     if( J.contains("additionalItems"))
     {
-        m_oneOfArray = J.find("additionalItems")->toArray();
-
+        auto aItems = J.find("additionalItems");
+        if( aItems->isArray() )
+        {
+            m_oneOfArray = aItems->toArray();
+        }
+        else if( aItems->isObject() )
+        {
+            m_oneOfArray.push_back( aItems->toObject() );
+        }
         for(int i=0;i<m_oneOfArray.size();i++)
         {
             QString title = "item_" + QString(i);
@@ -438,19 +639,51 @@ void QJArray::setSchema(const QJsonObject &J)
         }
 
         if( m_oneOfArray.size() >=2)
+        {
             m_oneOf->setVisible(true);
+        }
+        m_add->setVisible(true);
+        m_fixedSize=false;
     }
+
+    bool uniqueItems=false;
+    if( J.contains("uniqueItems") )
+    {
+        uniqueItems = J.find("uniqueItems")->toBool();
+    }
+
     if( J.contains("items"))
     {
-        auto p = J.find("items")->toArray();
+        auto it = J.find("items");
 
-        int ro=0;
-        for(auto i=p.begin(); i!=p.end();i++)
+        if( it->isArray())
         {
-            push_back( i->toObject() );
+            auto p = it->toArray();
 
-            ro++;
+            int ro=0;
+            for(auto i=p.begin(); i!=p.end();i++)
+            {
+                push_back( i->toObject() );
+
+                ro++;
+            }
         }
+        else if (it->isObject())
+        {
+            auto p = it->toObject();
+
+            if(p.find("type")->toString() == "string" && p.contains("enum") && uniqueItems )
+            {
+                int i=0;
+                for(auto v : p.find("enum")->toArray())
+                {
+                    m_ListWidget->insertItem(i++, v.toString() );
+                }
+                m_ListWidget->setSelectionMode(QAbstractItemView::SelectionMode::MultiSelection);
+                m_ListWidget->show();
+            }
+        }
+
     }
     _rebuild();
 }
@@ -458,9 +691,19 @@ void QJArray::setSchema(const QJsonObject &J)
 QJsonValue QJArray::getValue() const
 {
     QJsonArray O;
-    for(auto & x : m_items)
+    if( m_ListWidget->count() == 0)
     {
-        O.push_back( x.m_widget->getValue() );
+        for(auto & x : m_items)
+        {
+            O.push_back( x.m_widget->getValue() );
+        }
+    }
+    else
+    {
+        for(auto x : m_ListWidget->selectedItems()    )
+        {
+            O.push_back( x->text() );
+        }
     }
     return O;
 }
@@ -470,8 +713,8 @@ QJsonValue QJArray::getValue() const
 //==============================================================================
 
 
-QJObject::QJObject(QWidget *parent) :
-    QJBase(parent)
+QJObject::QJObject(QWidget *parent, QJForm *parentForm) :
+    QJBase(parent, parentForm)
 {
     QFormLayout * l  = new QFormLayout(this);
 
@@ -496,6 +739,46 @@ QJObject::QJObject(QWidget *parent) :
     m_propertiesLayout->setMargin(3);
 
     l->addRow(m_propertiesLayout);
+
+//    {
+
+//        m_tabwidget = new QTabWidget(this);
+//        l->addRow(m_tabwidget);
+
+//        tabWidget->setObjectName(QString::fromUtf8("tabWidget"));
+//        tabWidget->setGeometry(QRect(110, 70, 551, 441));
+
+//        {
+//            auto FirstTab = new QWidget();
+//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
+//            tabWidget->addTab(FirstTab, QString("Tab 1"));
+//            auto verticalLayout = new QVBoxLayout(FirstTab);
+//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+
+//            auto textEdit = new QTextEdit(FirstTab);
+//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
+
+//            verticalLayout->addWidget(textEdit);
+
+
+//        }
+//        {
+//            auto FirstTab = new QWidget();
+//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
+
+//            auto verticalLayout = new QVBoxLayout(FirstTab);
+//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+
+//            auto textEdit = new QTextEdit(FirstTab);
+//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
+
+//            verticalLayout->addWidget(textEdit);
+
+//            tabWidget->addTab(FirstTab, QString("Tab 1"));
+//        }
+
+//    }
+
 }
 
 QJObject::~QJObject()
@@ -503,8 +786,10 @@ QJObject::~QJObject()
 
 }
 
-void QJObject::setSchema(const QJsonObject &J)
+void QJObject::setSchema(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
     {
         m_oneOf->clear();
         auto oneOfI = J.find("oneOf");
@@ -524,13 +809,24 @@ void QJObject::setSchema(const QJsonObject &J)
         }
     }
 
+
+
+
     setOneOf(J);
 }
 
 
-void QJObject::setOneOf(const QJsonObject &J)
+void QJObject::setOneOf(const QJsonObject &JJ)
 {
+    QJsonObject J = getParentForm()->dereference(JJ);
+
     auto * L = m_propertiesLayout;
+
+    if( m_tabwidget )
+    {
+        m_tabwidget->deleteLater();
+        m_tabwidget=nullptr;
+    }
 
     while(m_propertiesLayout->rowCount())
     {
@@ -538,7 +834,9 @@ void QJObject::setOneOf(const QJsonObject &J)
     }
     m_properties.clear();
 
-    std::map< QString, QWidget*> props;
+    std::map< QString, std::pair<QString,QWidget*> > props;
+
+
 
     if( J.contains("properties"))
     {
@@ -549,13 +847,16 @@ void QJObject::setOneOf(const QJsonObject &J)
             auto k = i.key();
             auto v = i.value();
 
-            auto * w = new QJValue(this);
+            auto title=k;
+
+            auto * w = new QJValue(this, getParentForm() );
             auto vO = v.toObject();
 
             {
                 auto t = vO.find("title");
-                if( t!=vO.end()){
-                    k = t->toString( k );
+                if( t!=vO.end())
+                {
+                    title = t->toString( k );
                 }
             }
             bool visible=true;
@@ -572,30 +873,66 @@ void QJObject::setOneOf(const QJsonObject &J)
                     w->setToolTip(t->toString());
                 }
             }
-
             w->setSchema(vO);
 
             if( visible)
             {
-                props[k] = w;
+                props[k] = {title,w};
             }
             w->setVisible(visible);
-            m_properties[ i.key() ] = w;
+            m_properties[ i.key() ] = {title,w};
         }
     }
+
+
+    QString wid="rows";
+    if( J.contains("ui:widget") )
+    {
+        wid = J.find("ui:widget")->toString();
+    }
+
+
+    if( wid == "tabs")
+    {
+        m_tabwidget = new QTabWidget(this);
+        m_propertiesLayout->addRow(m_tabwidget);
+    }
+
+
     if( J.contains("ui:order"))
     {
         auto order = J.find("ui:order")->toArray();
         for(auto x : order)
         {
             if( props.count(x.toString()))
-                L->addRow( x.toString(), props.at(x.toString()));
+            {
+                if( wid=="tabs")
+                {
+                    m_tabwidget->addTab( props.at(x.toString()).second, props.at(x.toString()).first);
+                }
+                else
+                {
+                    L->addRow( props.at(x.toString()).first, props.at(x.toString()).second);
+                }
+            }
             props.erase( x.toString() );
         }
     }
-    for(auto & x : props)
+
+
+    else
     {
-        L->addRow(x.first,x.second);
+        for(auto & x : props)
+        {
+            if( wid=="tabs")
+            {
+                m_tabwidget->addTab( x.second.second, x.second.first);
+            }
+            else
+            {
+                L->addRow(x.second.first,x.second.second);
+            }
+        }
     }
 }
 
@@ -604,7 +941,7 @@ QJsonValue QJObject::getValue() const
     QJsonObject O;
     for(auto & x : m_properties)
     {
-        O[x.first] = x.second->getValue();
+        O[x.first] = x.second.second->getValue();
     }
     return O;
 }
@@ -624,8 +961,8 @@ QJsonValue QJObject::getValue() const
 
 
 
-QJValue::QJValue(QWidget *parent) :
-    QWidget(parent)
+QJValue::QJValue(QWidget *parent, QJForm *parentForm) :
+    QJBase(parent, parentForm)
 {
     QHBoxLayout * h  = new QHBoxLayout(this);
     h->setMargin(0);
@@ -650,41 +987,54 @@ QJsonValue QJValue::getValue() const
     {
         return w->getValue();
     }
+    else if( auto * w = dynamic_cast<QJBoolean*>(m_widget))
+    {
+        return w->getValue();
+    }
     return {};
 }
 
-void QJValue::setSchema(const QJsonObject &J)
+void QJValue::setSchema(const QJsonObject &JJ)
 {
     try{
         if( m_widget )
             delete m_widget;
 
+        QJsonObject J = getParentForm()->dereference(JJ);
+
         auto type = J.find("type")->toString();
 
         if( type == "string" )
         {
-            auto * w = new QJString(this);
+            auto * w = new QJString(this, getParentForm());
             m_widget = w;
             w->setSchema(J);
             this->layout()->addWidget(m_widget);
         }
         else if( type == "number" || type == "integer")
         {
-            auto * w = new QJNumber(this);
+            auto * w = new QJNumber(this, getParentForm());
             m_widget = w;
             w->setSchema(J);
             this->layout()->addWidget(m_widget);
         }
         else if( type == "object")
         {
-            auto * w = new QJObject(this);
+            auto * w = new QJObject(this, getParentForm());
             m_widget = w;
             w->setSchema(J);
             this->layout()->addWidget(m_widget);
         }
         else if( type == "array")
         {
-            auto * w = new QJArray(this);
+            auto * w = new QJArray(this, getParentForm());
+            m_widget = w;
+            w->setSchema(J);
+            this->layout()->addWidget(m_widget);
+        }
+        else if( type == "boolean")
+        {
+            auto * w = new QJBoolean(this, getParentForm());
             m_widget = w;
             w->setSchema(J);
             this->layout()->addWidget(m_widget);
@@ -705,7 +1055,93 @@ QJValue::~QJValue()
 }
 
 
+void QJString::setValue(QString S)
+{
+    if( m_Combo)
+    {
+        for(int i=0;i< m_Combo->count();i++)
+        {
+            if( m_Combo->itemText(i) == S )
+            {
+                m_Combo->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+    if(m_widget)
+        m_widget->setText(S);
+}
 
+void QJBoolean::setValue(bool b)
+{
+    if( m_switch)
+    {
+        m_switch->setChecked(b);
+    }
+    if(m_widget)
+        m_widget->setChecked(b);
+}
+
+
+void QJNumber::setValue(double b)
+{
+    m_widget->setValue(b);
+    double t = static_cast<double>(b - m_widget->minimum()) / static_cast<double>( m_widget->maximum() - m_widget->minimum());
+    double R = m_slider->minimum() * (1.0-t) + m_slider->maximum() * t;
+    m_slider->blockSignals(true);
+    m_slider->setValue( static_cast<int>(R) );
+    m_slider->blockSignals(false);
+
+}
+
+void QJArray::setValue(QJsonArray A)
+{
+    auto mm = std::min( static_cast<size_t>(A.size()), m_items.size() );
+    for(size_t i=0;i<mm;i++)
+    {
+        m_items[i].m_widget->setValue( A[i] );
+    }
+}
+
+void QJObject::setValue(QJsonObject A)
+{
+    for(auto k : A.keys())
+    {
+        if( m_properties.count(k))
+        {
+            m_properties.at(k).second->setValue( A[k]);
+        }
+    }
+}
+
+void QJValue::setValue(QJsonValue J)
+{
+    if( auto * w = dynamic_cast<QJNumber*>(m_widget))
+    {
+        if( J.isDouble())
+            w->setValue( J.toDouble());
+    }
+    else if( auto * w = dynamic_cast<QJString*>(m_widget))
+    {
+        if( J.isString())
+            w->setValue(J.toString());
+    }
+    else if( auto * w = dynamic_cast<QJObject*>(m_widget))
+    {
+        if( J.isObject())
+            w->setValue(J.toObject());
+    }
+    else if( auto * w = dynamic_cast<QJArray*>(m_widget))
+    {
+        if( J.isArray())
+            w->setValue( J.toArray() );
+    }
+    else if( auto * w = dynamic_cast<QJBoolean*>(m_widget))
+    {
+        if( J.isBool())
+            w->setValue(J.toBool());
+    }
+}
 
 
 
@@ -719,23 +1155,12 @@ QJValue::~QJValue()
 
 QJForm::QJForm(QWidget *parent) : QWidget(parent)
 {
-    auto vb     = new QVBoxLayout(this);
-    m_ok = new QPushButton("ok");
-    m_scrollArea      = new QScrollArea(this);
+    auto vb       = new QVBoxLayout(this);
+    m_scrollArea  = new QScrollArea(this);
 
+    vb->setMargin(0);
     vb->addWidget( m_scrollArea );
-    vb->addWidget( m_ok );
 
-
-    connect( m_ok, &QPushButton::clicked,
-             [this](bool)
-            {
-                if( m_jvalue)
-                {
-                    auto root = m_jvalue->getValue().toObject();
-                    emit update(root);
-                }
-            });
 
 }
 
@@ -746,14 +1171,55 @@ QJsonObject QJForm::get() const
     return {};
 }
 
+QJsonObject QJForm::getDef(QString ref) const
+{
+    std::string r = ref.toStdString();
+    if( r.size() > 2)
+    {
+        if( r.front() == '#' && r[1] =='/')
+        {
+            return getRef(m_schema, std::string( r.begin()+2, r.end()));
+        }
+    }
+    return {};
+}
+
+QJsonObject QJForm::dereference(QJsonObject JJ) const
+{
+    QJsonObject J;
+    if( JJ.contains("$ref") )
+    {
+        J = getDef( JJ.find("$ref")->toString() );
+
+        for(auto i : JJ.keys())
+        {
+            J[i] = JJ[i];
+        }
+    }
+    else
+    {
+        J = JJ;
+    }
+    return J;
+}
+
 void QJForm::setSchema(const QJsonObject &J)
 {
+    m_schema = J;
+
     if( m_jvalue)
         delete m_jvalue;
-    m_jvalue = new QJValue(this);
+
+    m_jvalue = new QJValue(this, this);
     m_jvalue->setSchema(J);
     m_scrollArea->setWidget(m_jvalue);
     m_scrollArea->setWidgetResizable(true);
+}
+
+void QJForm::setValue(QJsonObject const &J)
+{
+    QJsonValue V(J);
+    m_jvalue->setValue( V );
 }
 
 }

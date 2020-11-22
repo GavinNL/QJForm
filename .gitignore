@@ -1,1 +1,3 @@
-*.user
+*CMakeLists.txt.user
+builds/*
+build/*

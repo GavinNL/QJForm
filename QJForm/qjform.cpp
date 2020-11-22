@@ -1086,6 +1086,12 @@ void QJBoolean::setValue(bool b)
 void QJNumber::setValue(double b)
 {
     m_widget->setValue(b);
+    double t = static_cast<double>(b - m_widget->minimum()) / static_cast<double>( m_widget->maximum() - m_widget->minimum());
+    double R = m_slider->minimum() * (1.0-t) + m_slider->maximum() * t;
+    m_slider->blockSignals(true);
+    m_slider->setValue( static_cast<int>(R) );
+    m_slider->blockSignals(false);
+
 }
 
 void QJArray::setValue(QJsonArray A)

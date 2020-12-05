@@ -16,6 +16,7 @@
 #include <QFormLayout>
 #include <QCheckBox>
 #include <QListWidget>
+#include <QDateEdit>
 
 namespace QJForm
 {
@@ -65,6 +66,7 @@ public:
     QPushButton * m_fileButton = nullptr;
     QPushButton * m_dirButton = nullptr;
     QPushButton * m_colorButton = nullptr;
+    QDateEdit   * m_dateEdit = nullptr;
 
 };
 
@@ -127,7 +129,6 @@ public:
     QFormLayout * m_propertiesLayout = nullptr;
     QTabWidget * m_tabwidget = nullptr;
 };
-
 
 class QJArray : public QJBase
 {

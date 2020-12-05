@@ -65,17 +65,27 @@ QJString::QJString(QWidget *parent, QJForm *parentForm) :
     m_fileButton = new QPushButton(this);
     m_dirButton = new QPushButton(this);
     m_colorButton = new QPushButton(this);
+    m_dateEdit = new QDateEdit(this);
 
     h->addWidget(m_widget,0);
     h->addWidget(m_fileButton,0);
     h->addWidget(m_dirButton,0);
     h->addWidget(m_colorButton,0);
     h->addWidget(m_Combo,0);
+    h->addWidget(m_dateEdit,0);
 
     connect(m_widget, &QLineEdit::textChanged,
     [this]()
     {
         emit getParentForm()->changed();
+    });
+
+    connect(m_dateEdit, &QDateEdit::dateChanged,
+    [this](const QDate &date )
+    {
+        //auto fileName = QFileDialog::getOpenFileName(this, tr("Choose File"), "/home/jana", tr("Image Files (*.png *.jpg *.bmp)"));
+        m_widget->setText( date.toString(Qt::ISODate));
+        //m_fileButton->setText(fileName);
     });
 
     connect(m_fileButton, &QPushButton::clicked,
@@ -122,14 +132,7 @@ void QJString::setSchema(const QJsonObject &JJ)
     QJsonObject J = getParentForm()->dereference(JJ);
 
     QString wid = "";
-    {
-        auto mI = J.find("default");
-        if( mI != J.end() )
-        {
-            auto def = mI->toString();
-            m_widget->setText(def);
-        }
-    }
+
     {
         auto mI = J.find("ui:widget");
         if( mI != J.end() )
@@ -156,18 +159,38 @@ void QJString::setSchema(const QJsonObject &JJ)
             m_dirButton->setVisible(false);
             m_widget->setVisible(false);
             m_colorButton->setVisible(false);
+            m_dateEdit->setVisible(false);
             m_Combo->setVisible(true);
             return;
         }
     }
 
+    QString defaultValue;
+    {
+        auto mI = J.find("default");
+        if( mI != J.end() )
+        {
+            defaultValue = mI->toString();
+        }
+    }
 
+    //m_widget->setText(defaultValue);
     if( wid == "file")
     {
         m_fileButton->setVisible(true);
         m_dirButton->setVisible(false);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(false);
+        m_dateEdit->setVisible(false);
+    }
+    else if( wid == "date")
+    {
+        m_dirButton->setVisible(false);
+        m_fileButton->setVisible(false);
+        m_Combo->setVisible(false);
+        m_colorButton->setVisible(false);
+        m_widget->setVisible(false);
+        m_dateEdit->setVisible(true);
     }
     else if( wid == "dir")
     {
@@ -175,6 +198,7 @@ void QJString::setSchema(const QJsonObject &JJ)
         m_dirButton->setVisible(true);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(false);
+        m_dateEdit->setVisible(false);
     }
     else if( wid=="color" || wid=="colour")
     {
@@ -182,6 +206,7 @@ void QJString::setSchema(const QJsonObject &JJ)
         m_fileButton->setVisible(false);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(true);
+        m_dateEdit->setVisible(false);
     }
     else
     {
@@ -189,7 +214,12 @@ void QJString::setSchema(const QJsonObject &JJ)
         m_fileButton->setVisible(false);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(false);
+        m_dateEdit->setVisible(false);
     }
+
+    setValue(defaultValue);
+
+
 
 }
 
@@ -564,21 +594,11 @@ void QJArray::push_back(QJsonObject O)
         }
     });
 
-    //QPalette pal = del->palette();
-    //pal.setColor(QPalette::Base, QColor(Qt::red));
-    //del->setAutoFillBackground(true);
-    //del->setPalette(pal);
-    //del->update();
-
-
     h->addWidget( up);
     h->addWidget( down);
     h->addWidget( del);
 
-//            L->addRow(h);
-
     m_items.push_back({w,h, up, down, del});
-
 }
 
 QJArray::~QJArray()
@@ -1056,8 +1076,17 @@ void QJString::setValue(QString S)
             }
         }
     }
-    if(m_widget)
-        m_widget->setText(S);
+    if( m_dateEdit )
+    {
+        QDate d;
+        d = QDate::fromString(S, Qt::ISODate);
+        m_dateEdit->setDate(d);
+    }
+    else
+    {
+        if(m_widget)
+            m_widget->setText(S);
+    }
 }
 
 void QJBoolean::setValue(bool b)

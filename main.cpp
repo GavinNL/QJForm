@@ -247,7 +247,9 @@ int main(int argc, char *argv[])
 
     // A boolean option with a single name (-p)
     QCommandLineOption showProgressOption("b", QCoreApplication::translate("main", "Print output as bash variables instead of json"));
+    QCommandLineOption showVersion("v", QCoreApplication::translate("main", "Print the version"));
     parser.addOption(showProgressOption);
+    parser.addOption(showVersion);
 
     // Process the actual command line arguments given by the user
     parser.process(a);
@@ -257,7 +259,11 @@ int main(int argc, char *argv[])
 
     asBash = parser.isSet(showProgressOption);
 
-
+    if( parser.isSet(showVersion))
+    {
+        std::cout << QJFORM_VERSION << std::endl;
+        return 0;
+    }
     MainWindow w;
     w.show();
     return a.exec();

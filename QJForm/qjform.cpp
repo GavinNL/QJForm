@@ -65,17 +65,27 @@ QJString::QJString(QWidget *parent, QJForm *parentForm) :
     m_fileButton = new QPushButton(this);
     m_dirButton = new QPushButton(this);
     m_colorButton = new QPushButton(this);
+    m_dateEdit = new QDateEdit(this);
 
     h->addWidget(m_widget,0);
     h->addWidget(m_fileButton,0);
     h->addWidget(m_dirButton,0);
     h->addWidget(m_colorButton,0);
     h->addWidget(m_Combo,0);
+    h->addWidget(m_dateEdit,0);
 
     connect(m_widget, &QLineEdit::textChanged,
     [this]()
     {
         emit getParentForm()->changed();
+    });
+
+    connect(m_dateEdit, &QDateEdit::dateChanged,
+    [this](const QDate &date )
+    {
+        //auto fileName = QFileDialog::getOpenFileName(this, tr("Choose File"), "/home/jana", tr("Image Files (*.png *.jpg *.bmp)"));
+        m_widget->setText( date.toString(Qt::ISODate));
+        //m_fileButton->setText(fileName);
     });
 
     connect(m_fileButton, &QPushButton::clicked,
@@ -122,14 +132,7 @@ void QJString::setSchema(const QJsonObject &JJ)
     QJsonObject J = getParentForm()->dereference(JJ);
 
     QString wid = "";
-    {
-        auto mI = J.find("default");
-        if( mI != J.end() )
-        {
-            auto def = mI->toString();
-            m_widget->setText(def);
-        }
-    }
+
     {
         auto mI = J.find("ui:widget");
         if( mI != J.end() )
@@ -156,18 +159,38 @@ void QJString::setSchema(const QJsonObject &JJ)
             m_dirButton->setVisible(false);
             m_widget->setVisible(false);
             m_colorButton->setVisible(false);
+            m_dateEdit->setVisible(false);
             m_Combo->setVisible(true);
             return;
         }
     }
 
+    QString defaultValue;
+    {
+        auto mI = J.find("default");
+        if( mI != J.end() )
+        {
+            defaultValue = mI->toString();
+        }
+    }
 
+    //m_widget->setText(defaultValue);
     if( wid == "file")
     {
         m_fileButton->setVisible(true);
         m_dirButton->setVisible(false);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(false);
+        m_dateEdit->setVisible(false);
+    }
+    else if( wid == "date")
+    {
+        m_dirButton->setVisible(false);
+        m_fileButton->setVisible(false);
+        m_Combo->setVisible(false);
+        m_colorButton->setVisible(false);
+        m_widget->setVisible(false);
+        m_dateEdit->setVisible(true);
     }
     else if( wid == "dir")
     {
@@ -175,6 +198,7 @@ void QJString::setSchema(const QJsonObject &JJ)
         m_dirButton->setVisible(true);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(false);
+        m_dateEdit->setVisible(false);
     }
     else if( wid=="color" || wid=="colour")
     {
@@ -182,6 +206,7 @@ void QJString::setSchema(const QJsonObject &JJ)
         m_fileButton->setVisible(false);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(true);
+        m_dateEdit->setVisible(false);
     }
     else
     {
@@ -189,7 +214,12 @@ void QJString::setSchema(const QJsonObject &JJ)
         m_fileButton->setVisible(false);
         m_Combo->setVisible(false);
         m_colorButton->setVisible(false);
+        m_dateEdit->setVisible(false);
     }
+
+    setValue(defaultValue);
+
+
 
 }
 
@@ -242,6 +272,7 @@ QJBoolean::QJBoolean(QWidget *parent, QJForm *parentForm) :
     h->setAlignment(Qt::AlignLeft);
 
 
+    h->addWidget( new QWidget(), 1);
     h->addWidget(le, 1);
     h->addWidget(s,1);
     h->update();
@@ -493,9 +524,15 @@ void QJArray::push_back(QJsonObject O)
     auto * down = new QToolButton(this); down->setArrowType(Qt::DownArrow);
     auto * del  = new QToolButton(this); del->setText("✖");
 
+
+    up->setVisible(  !m_fixedOrder);
+    down->setVisible(!m_fixedOrder);
+   // del->setVisible(showButtons);
+
     up->setMaximumSize( 25,25);
     down->setMaximumSize( 25,25);
     del->setMaximumSize( 25,25);
+
     connect( down, &QAbstractButton::clicked,
              [w, this](bool)
     {
@@ -557,21 +594,11 @@ void QJArray::push_back(QJsonObject O)
         }
     });
 
-    //QPalette pal = del->palette();
-    //pal.setColor(QPalette::Base, QColor(Qt::red));
-    //del->setAutoFillBackground(true);
-    //del->setPalette(pal);
-    //del->update();
-
-
     h->addWidget( up);
     h->addWidget( down);
     h->addWidget( del);
 
-//            L->addRow(h);
-
     m_items.push_back({w,h, up, down, del});
-
 }
 
 QJArray::~QJArray()
@@ -618,6 +645,18 @@ void QJArray::setSchema(const QJsonObject &JJ)
 
     m_ListWidget->clear();
     m_ListWidget->hide();
+
+    if( J.contains("ui:spacing"))
+    {
+        auto spacing = J.find("ui:spacing")->toInt();
+        m_propertiesLayout->setVerticalSpacing(spacing);
+        m_ListWidget->setSpacing(spacing);
+    }
+    if( J.contains("ui:fixedOrder"))
+    {
+        m_fixedOrder = J.find("ui:fixedOrder")->toBool();
+    }
+
     if( J.contains("additionalItems"))
     {
         auto aItems = J.find("additionalItems");
@@ -651,6 +690,7 @@ void QJArray::setSchema(const QJsonObject &JJ)
     {
         uniqueItems = J.find("uniqueItems")->toBool();
     }
+
 
     if( J.contains("items"))
     {
@@ -736,49 +776,12 @@ QJObject::QJObject(QWidget *parent, QJForm *parentForm) :
         l->addRow(h);
     }
 
-    m_propertiesLayout->setMargin(3);
+
+    m_propertiesLayout->setMargin(0);
+    m_propertiesLayout->setSpacing(0);
+    m_propertiesLayout->setVerticalSpacing(1);
 
     l->addRow(m_propertiesLayout);
-
-//    {
-
-//        m_tabwidget = new QTabWidget(this);
-//        l->addRow(m_tabwidget);
-
-//        tabWidget->setObjectName(QString::fromUtf8("tabWidget"));
-//        tabWidget->setGeometry(QRect(110, 70, 551, 441));
-
-//        {
-//            auto FirstTab = new QWidget();
-//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
-//            tabWidget->addTab(FirstTab, QString("Tab 1"));
-//            auto verticalLayout = new QVBoxLayout(FirstTab);
-//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-
-//            auto textEdit = new QTextEdit(FirstTab);
-//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
-
-//            verticalLayout->addWidget(textEdit);
-
-
-//        }
-//        {
-//            auto FirstTab = new QWidget();
-//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
-
-//            auto verticalLayout = new QVBoxLayout(FirstTab);
-//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-
-//            auto textEdit = new QTextEdit(FirstTab);
-//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
-
-//            verticalLayout->addWidget(textEdit);
-
-//            tabWidget->addTab(FirstTab, QString("Tab 1"));
-//        }
-
-//    }
-
 }
 
 QJObject::~QJObject()
@@ -836,6 +839,11 @@ void QJObject::setOneOf(const QJsonObject &JJ)
 
     std::map< QString, std::pair<QString,QWidget*> > props;
 
+    if( J.contains("ui:spacing"))
+    {
+        auto spacing = J.find("ui:spacing")->toInt();
+        m_propertiesLayout->setVerticalSpacing(spacing);
+    }
 
 
     if( J.contains("properties"))
@@ -1068,8 +1076,17 @@ void QJString::setValue(QString S)
             }
         }
     }
-    if(m_widget)
-        m_widget->setText(S);
+    if( m_dateEdit )
+    {
+        QDate d;
+        d = QDate::fromString(S, Qt::ISODate);
+        m_dateEdit->setDate(d);
+    }
+    else
+    {
+        if(m_widget)
+            m_widget->setText(S);
+    }
 }
 
 void QJBoolean::setValue(bool b)

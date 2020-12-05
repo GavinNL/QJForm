@@ -106,6 +106,31 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
 
+## Using As a Library
+
+Additionally you can use QJForms as a library for your own projects.
+Simply add this repo as a submodule and then link to the CMake target : `QJForm::QJForm`
+
+```cpp
+
+// set the schema to use
+QJsonObject schemaJsonObject = ...
+
+auto * F = new QJform::QJForm();
+F->setSchema( schemaJsonObject );
+
+// Add F as a widget to a window
+
+```
+
+### Signals
+
+THe QJForm class exposes a single signal `changed()` which you can use to
+check when the user has changed a value in the form. It unforunately does not
+provide you with which widget was changed, just that an item was changed. You will
+need to use the `get()` method to retrieve the `QJsonObject`
+
+
 # Create A Simple Form
 
 There are a few samples in the `samples` folder which explain how to build various

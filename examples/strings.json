@@ -35,6 +35,14 @@
             "type" : "string",
             "ui:widget" : "dir",
             "description" : "Choose a directory"
+        },
+        "date" :
+        {
+            "title" : "Date",
+            "type" : "string",
+            "ui:widget" : "date",
+            "default" : "2020-12-25",
+            "description" : "Select a date"
         }
     }
 }

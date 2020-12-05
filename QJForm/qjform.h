@@ -18,6 +18,11 @@
 #include <QListWidget>
 #include <QDateEdit>
 
+#define QJFORM_VERSION_MAJOR 0
+#define QJFORM_VERSION_MINOR 1
+
+#define QJFORM_VERSION "0.1"
+
 namespace QJForm
 {
 

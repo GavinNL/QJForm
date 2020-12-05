@@ -162,7 +162,7 @@ public:
     QFormLayout * m_propertiesLayout = nullptr;
     QListWidget * m_ListWidget=nullptr;
     bool m_fixedSize=false;
-
+    bool m_fixedOrder=false;
 };
 
 

@@ -3,6 +3,7 @@
     "ui:width" : 500,
     "ui:height" : 800,
     "title" : "Object types",
+    "ui:spacing" : "0",
     "properties" :
     {
         "invisible" : 

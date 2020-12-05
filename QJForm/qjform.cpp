@@ -242,6 +242,7 @@ QJBoolean::QJBoolean(QWidget *parent, QJForm *parentForm) :
     h->setAlignment(Qt::AlignLeft);
 
 
+    h->addWidget( new QWidget(), 1);
     h->addWidget(le, 1);
     h->addWidget(s,1);
     h->update();
@@ -493,9 +494,15 @@ void QJArray::push_back(QJsonObject O)
     auto * down = new QToolButton(this); down->setArrowType(Qt::DownArrow);
     auto * del  = new QToolButton(this); del->setText("✖");
 
+
+    up->setVisible(  !m_fixedOrder);
+    down->setVisible(!m_fixedOrder);
+   // del->setVisible(showButtons);
+
     up->setMaximumSize( 25,25);
     down->setMaximumSize( 25,25);
     del->setMaximumSize( 25,25);
+
     connect( down, &QAbstractButton::clicked,
              [w, this](bool)
     {
@@ -618,6 +625,18 @@ void QJArray::setSchema(const QJsonObject &JJ)
 
     m_ListWidget->clear();
     m_ListWidget->hide();
+
+    if( J.contains("ui:spacing"))
+    {
+        auto spacing = J.find("ui:spacing")->toInt();
+        m_propertiesLayout->setVerticalSpacing(spacing);
+        m_ListWidget->setSpacing(spacing);
+    }
+    if( J.contains("ui:fixedOrder"))
+    {
+        m_fixedOrder = J.find("ui:fixedOrder")->toBool();
+    }
+
     if( J.contains("additionalItems"))
     {
         auto aItems = J.find("additionalItems");
@@ -651,6 +670,7 @@ void QJArray::setSchema(const QJsonObject &JJ)
     {
         uniqueItems = J.find("uniqueItems")->toBool();
     }
+
 
     if( J.contains("items"))
     {
@@ -736,49 +756,12 @@ QJObject::QJObject(QWidget *parent, QJForm *parentForm) :
         l->addRow(h);
     }
 
-    m_propertiesLayout->setMargin(3);
+
+    m_propertiesLayout->setMargin(0);
+    m_propertiesLayout->setSpacing(0);
+    m_propertiesLayout->setVerticalSpacing(1);
 
     l->addRow(m_propertiesLayout);
-
-//    {
-
-//        m_tabwidget = new QTabWidget(this);
-//        l->addRow(m_tabwidget);
-
-//        tabWidget->setObjectName(QString::fromUtf8("tabWidget"));
-//        tabWidget->setGeometry(QRect(110, 70, 551, 441));
-
-//        {
-//            auto FirstTab = new QWidget();
-//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
-//            tabWidget->addTab(FirstTab, QString("Tab 1"));
-//            auto verticalLayout = new QVBoxLayout(FirstTab);
-//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-
-//            auto textEdit = new QTextEdit(FirstTab);
-//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
-
-//            verticalLayout->addWidget(textEdit);
-
-
-//        }
-//        {
-//            auto FirstTab = new QWidget();
-//            FirstTab->setObjectName(QString::fromUtf8("FirstTab"));
-
-//            auto verticalLayout = new QVBoxLayout(FirstTab);
-//            verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-
-//            auto textEdit = new QTextEdit(FirstTab);
-//            textEdit->setObjectName(QString::fromUtf8("textEdit"));
-
-//            verticalLayout->addWidget(textEdit);
-
-//            tabWidget->addTab(FirstTab, QString("Tab 1"));
-//        }
-
-//    }
-
 }
 
 QJObject::~QJObject()
@@ -836,6 +819,11 @@ void QJObject::setOneOf(const QJsonObject &JJ)
 
     std::map< QString, std::pair<QString,QWidget*> > props;
 
+    if( J.contains("ui:spacing"))
+    {
+        auto spacing = J.find("ui:spacing")->toInt();
+        m_propertiesLayout->setVerticalSpacing(spacing);
+    }
 
 
     if( J.contains("properties"))

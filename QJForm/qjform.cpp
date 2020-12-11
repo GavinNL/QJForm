@@ -1076,7 +1076,7 @@ void QJString::setValue(QString S)
             }
         }
     }
-    if( m_dateEdit )
+    if( m_dateEdit->isVisible())
     {
         QDate d;
         d = QDate::fromString(S, Qt::ISODate);
@@ -1085,7 +1085,9 @@ void QJString::setValue(QString S)
     else
     {
         if(m_widget)
+        {
             m_widget->setText(S);
+        }
     }
 }
 
@@ -1096,7 +1098,9 @@ void QJBoolean::setValue(bool b)
         m_switch->setChecked(b);
     }
     if(m_widget)
+    {
         m_widget->setChecked(b);
+    }
 }
 
 

@@ -4,13 +4,14 @@
 // https://stackoverflow.com/a/62247360
 
 
-#include "ToggleSwitch.h"
 #include <QtCore/QEvent>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QPropertyAnimation> 
 #include <QtGui/QPainter> 
 #include <QtGui/QMouseEvent> 
 #include <QPainterPath>
+
+#include <QJForm/ToggleSwitch.h>
 
 namespace QJForm
 {

@@ -1,4 +1,3 @@
-#include "qjform.h"
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QToolButton>
@@ -15,7 +14,9 @@
 #include <iostream>
 #include <QJsonDocument>
 #include <QListWidget>
-#include "ToggleSwitch.h"
+
+#include <QJForm/qjform.h>
+#include <QJForm/ToggleSwitch.h>
 
 namespace QJForm
 {

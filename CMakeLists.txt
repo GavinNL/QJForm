@@ -19,16 +19,18 @@ option(QJFORM_BUILD_EXE "Build the QJForm executable" TRUE)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 add_library(QJForm_lib
-    QJForm/qjform.cpp
-    QJForm/qjform.h
-    QJForm/ToggleSwitch.cpp
-    QJForm/ToggleSwitch.h
+    src/qjform.cpp
+    include/QJForm/qjform.h
+    src/ToggleSwitch.cpp
+    include/QJForm/ToggleSwitch.h
+    src/CollapsableWidget.cpp
+    include/QJForm/CollapsableWidget.h
 )
+target_include_directories( QJForm_lib PUBLIC include )
 
 add_library( QJForm::QJForm ALIAS QJForm_lib  )
 target_link_libraries(QJForm_lib PUBLIC Qt5::Widgets)
 
-target_include_directories( QJForm_lib PUBLIC QJForm)
 
 if( QJFORM_BUILD_EXE )
     add_executable(QJForm main.cpp )

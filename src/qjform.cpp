@@ -134,6 +134,15 @@ void QJString::setSchema(const QJsonObject &JJ)
 
     QString wid = "";
 
+    QString defaultValue;
+    {
+        auto mI = J.find("default");
+        if( mI != J.end() )
+        {
+            defaultValue = mI->toString();
+        }
+    }
+
     {
         auto mI = J.find("ui:widget");
         if( mI != J.end() )
@@ -162,18 +171,12 @@ void QJString::setSchema(const QJsonObject &JJ)
             m_colorButton->setVisible(false);
             m_dateEdit->setVisible(false);
             m_Combo->setVisible(true);
+            setValue(defaultValue);
             return;
         }
     }
 
-    QString defaultValue;
-    {
-        auto mI = J.find("default");
-        if( mI != J.end() )
-        {
-            defaultValue = mI->toString();
-        }
-    }
+
 
     //m_widget->setText(defaultValue);
     if( wid == "file")
